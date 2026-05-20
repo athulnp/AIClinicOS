@@ -6,6 +6,7 @@ using ClinicOS.Application.Mapping;
 using ClinicOS.Application.Services;
 using ClinicOS.Infrastructure.Data;
 using ClinicOS.Infrastructure.Repositories;
+using ClinicOS.Infrastructure.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -29,12 +30,15 @@ builder.Host.UseSerilog();
 
 // Add services to the container
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantContext, TenantContext>();
 
 // Configure DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Register repositories
+builder.Services.AddScoped<IClinicRepository, ClinicRepository>();
 builder.Services.AddScoped<IPatientRepository, PatientRepository>();
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<IBillingRepository, BillingRepository>();
@@ -50,6 +54,8 @@ builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IBillingService, BillingService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IClinicService, ClinicService>();
 builder.Services.AddScoped<IReminderService, ReminderService>();
 builder.Services.AddScoped<IDoctorService, DoctorService>();
 
@@ -92,9 +98,9 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Clinic OS Lite API",
+        Title = "AI Clinic OS API",
         Version = "v1",
-        Description = "Production-ready backend for dental clinic management"
+        Description = "Multi-clinic dental practice management API with tenant isolation"
     });
 
     // Add JWT Authentication to Swagger
@@ -154,7 +160,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.EnsureCreated();
+    await context.Database.MigrateAsync();
     await DataSeeder.SeedAsync(context);
 }
 
@@ -177,6 +183,7 @@ app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
+app.UseMiddleware<TenantMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

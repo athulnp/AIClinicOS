@@ -107,6 +107,7 @@ public class DoctorService : IDoctorService
         }
 
         var doctor = _mapper.Map<Doctor>(dto);
+        doctor.ClinicId = user.ClinicId!.Value;
         await _doctorRepository.CreateAsync(doctor);
         await _unitOfWork.SaveChangesAsync();
 

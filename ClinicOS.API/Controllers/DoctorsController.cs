@@ -146,7 +146,7 @@ public class DoctorsController : ControllerBase
     /// Create doctor details for a user
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<ActionResult<DoctorResponseDto>> CreateDoctor([FromBody] CreateDoctorDto dto)
     {
         try
@@ -180,7 +180,7 @@ public class DoctorsController : ControllerBase
     /// Update doctor details
     /// </summary>
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin,Doctor")]
+    [Authorize(Roles = "Admin,SuperAdmin,Doctor")]
     public async Task<ActionResult<DoctorResponseDto>> UpdateDoctor(int id, [FromBody] UpdateDoctorDto dto)
     {
         try
@@ -214,7 +214,7 @@ public class DoctorsController : ControllerBase
     /// Delete doctor details
     /// </summary>
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<ActionResult> DeleteDoctor(int id)
     {
         try

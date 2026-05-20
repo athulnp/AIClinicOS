@@ -8,8 +8,10 @@ namespace ClinicOS.Domain.Entities;
 /// <summary>
 /// Billing entity representing patient invoices and payments
 /// </summary>
-public class Billing : AuditableEntity
+public class Billing : AuditableEntity, ITenantEntity
 {
+    public int ClinicId { get; set; }
+
     [Required]
     public int PatientId { get; set; }
 
@@ -41,6 +43,8 @@ public class Billing : AuditableEntity
     public string? Notes { get; set; }
 
     // Navigation properties
+    public virtual Clinic Clinic { get; set; } = null!;
+
     [ForeignKey("PatientId")]
     public virtual Patient Patient { get; set; } = null!;
 

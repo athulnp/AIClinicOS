@@ -4,18 +4,13 @@ using Microsoft.Extensions.Logging;
 
 namespace ClinicOS.API.Services;
 
-/// <summary>
-/// Background service for sending reminders
-/// </summary>
 public class BackgroundReminderService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<BackgroundReminderService> _logger;
-    private readonly TimeSpan _checkInterval = TimeSpan.FromHours(1); // Check every hour
+    private readonly TimeSpan _checkInterval = TimeSpan.FromHours(1);
 
-    public BackgroundReminderService(
-        IServiceProvider serviceProvider,
-        ILogger<BackgroundReminderService> logger)
+    public BackgroundReminderService(IServiceProvider serviceProvider, ILogger<BackgroundReminderService> logger)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
@@ -30,17 +25,21 @@ public class BackgroundReminderService : BackgroundService
             try
             {
                 using var scope = _serviceProvider.CreateScope();
+                var clinicRepository = scope.ServiceProvider.GetRequiredService<IClinicRepository>();
+                var tenantContext = scope.ServiceProvider.GetRequiredService<ITenantContext>();
                 var reminderService = scope.ServiceProvider.GetRequiredService<IReminderService>();
 
-                _logger.LogInformation("Checking for reminders to send at: {time}", DateTimeOffset.Now);
+                var clinics = await clinicRepository.GetAllAsync(activeOnly: true);
 
-                // Send appointment reminders
-                await reminderService.SendAppointmentRemindersAsync();
+                foreach (var clinic in clinics)
+                {
+                    tenantContext.SetClinic(clinic.Id, clinic.Code);
+                    await reminderService.SendAppointmentRemindersAsync();
+                    await reminderService.SendFollowUpRemindersAsync();
+                }
 
-                // Send follow-up reminders
-                await reminderService.SendFollowUpRemindersAsync();
-
-                _logger.LogInformation("Reminder check completed at: {time}", DateTimeOffset.Now);
+                _logger.LogInformation("Reminder check completed for {Count} clinics at: {Time}",
+                    clinics.Count(), DateTimeOffset.Now);
             }
             catch (Exception ex)
             {

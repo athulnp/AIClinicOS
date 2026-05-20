@@ -8,8 +8,10 @@ namespace ClinicOS.Domain.Entities;
 /// <summary>
 /// Appointment entity representing scheduled appointments
 /// </summary>
-public class Appointment : AuditableEntity
+public class Appointment : AuditableEntity, ITenantEntity
 {
+    public int ClinicId { get; set; }
+
     [Required]
     public int PatientId { get; set; }
 
@@ -35,6 +37,8 @@ public class Appointment : AuditableEntity
     public string? Notes { get; set; }
 
     // Navigation properties
+    public virtual Clinic Clinic { get; set; } = null!;
+
     [ForeignKey("PatientId")]
     public virtual Patient Patient { get; set; } = null!;
 

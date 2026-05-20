@@ -1,6 +1,6 @@
-# Clinic OS Lite - Dental Clinic Management System
+# AI Clinic OS - Multi-Clinic Dental Management API
 
-A production-ready ASP.NET Core 8 backend for dental clinic management, built with clean architecture and enterprise-grade practices.
+A production-ready ASP.NET Core backend for **multi-clinic** dental practice management, built with clean architecture and tenant isolation. See [MULTI_CLINIC.md](MULTI_CLINIC.md) for tenancy details.
 
 ## 🏗️ Architecture
 
@@ -50,35 +50,41 @@ ClinicOS/
 
 ## 🚀 Features
 
-### 1. Authentication & User Management
-- JWT-based authentication
-- Role-based authorization (Admin, Doctor, Receptionist)
-- User CRUD operations
-- Refresh token support
-- Password hashing
+### 1. Multi-Clinic Tenancy
+- `Clinic` entity and per-clinic data isolation (`ClinicId` on all tenant data)
+- Roles: **SuperAdmin** (platform), **Admin**, **Doctor**, **Receptionist** (per clinic)
+- JWT `clinic_id` claim + `X-Clinic-Id` header for SuperAdmin scoped operations
+- Composite unique indexes per clinic (username, patient code, invoice number, etc.)
 
-### 2. Patient Records
+### 2. Authentication & User Management
+- JWT login with `clinicCode` for clinic staff
+- Dedicated `UsersController` (`/api/users`) — list, CRUD, profile, password change
+- Safe user deactivation (blocks delete when appointments/doctor profile exist)
+- BCrypt password hashing (legacy SHA-256 hashes auto-upgrade on login)
+- Refresh token support
+
+### 3. Patient Records
 - Patient CRUD with soft delete
 - Search by name or phone number
 - Pagination support
 - Patient code generation
 - Medical history and allergies tracking
 
-### 3. Appointments
+### 4. Appointments
 - Create, reschedule, cancel appointments
 - Status tracking (Scheduled, Completed, Cancelled, NoShow)
 - Overlap prevention for doctor schedules
 - Doctor daily schedule view
 - Patient appointment history
 
-### 4. Billing & Payments
+### 5. Billing & Payments
 - Invoice generation
 - Payment tracking
 - Outstanding balance reports
 - Multiple payment methods (Cash, UPI, Card, BankTransfer)
 - Payment status tracking (Pending, Partial, Paid)
 
-### 5. Reminder System
+### 6. Reminder System
 - Background service for automated reminders
 - Appointment reminders (24 hours before)
 - Follow-up reminders (3 days after)
@@ -137,13 +143,29 @@ Update `appsettings.json` in `ClinicOS.API`:
 dotnet restore
 ```
 
-### 4. Run Database Migrations
+### 4. Database migrations
+
+The API applies EF Core migrations on startup (`Database.MigrateAsync()`), then seeds demo data if missing.
+
+**Apply migrations manually (optional):**
 
 ```bash
-cd ClinicOS.Infrastructure
-dotnet ef migrations add InitialCreate --startup-project ../ClinicOS.API
-dotnet ef database update --startup-project ../ClinicOS.API
+dotnet ef database update --project ClinicOS.Infrastructure --startup-project ClinicOS.API
 ```
+
+**Add a new migration after model changes:**
+
+```bash
+dotnet ef migrations add <MigrationName> --project ClinicOS.Infrastructure --startup-project ClinicOS.API --output-dir Migrations
+```
+
+**Fresh database** (development):
+
+```sql
+DROP DATABASE ClinicOSDb;
+```
+
+Then run the API or `dotnet ef database update`.
 
 ### 5. Run the Application
 
@@ -159,13 +181,14 @@ The API will be available at:
 
 ### 6. Default Seed Data
 
-The application automatically seeds the following users:
+The application seeds clinic `demo-dental` and users:
 
-| Username | Password | Role | Email |
-|----------|----------|------|-------|
-| admin | Admin@123 | Admin | admin@clinicos.com |
-| doctor1 | Doctor@123 | Doctor | doctor1@clinicos.com |
-| reception1 | Reception@123 | Receptionist | reception1@clinicos.com |
+| Login | Password | Role | Notes |
+|-------|----------|------|-------|
+| superadmin | SuperAdmin@123 | SuperAdmin | No `clinicCode` |
+| admin | Admin@123 | Admin | `clinicCode`: `demo-dental` |
+| doctor1 | Doctor@123 | Doctor | `clinicCode`: `demo-dental` |
+| reception1 | Reception@123 | Receptionist | `clinicCode`: `demo-dental` |
 
 ## 🐳 Docker Deployment
 
@@ -205,10 +228,26 @@ Authorization: Bearer <your-jwt-token>
 ### Key Endpoints
 
 #### Authentication
-- `POST /api/auth/login` - Login and get JWT token
+- `POST /api/auth/login` - Login (`clinicCode` required for clinic staff)
 - `POST /api/auth/refresh` - Refresh JWT token
 - `POST /api/auth/logout` - Logout
 - `GET /api/auth/me` - Get current user
+
+#### Clinics (SuperAdmin)
+- `POST /api/clinics` - Onboard new clinic
+- `GET /api/clinics` - List clinics (paginated)
+- `GET /api/clinics/{id}` - Get clinic by ID
+- `GET /api/clinics/code/{code}` - Resolve clinic by code (public)
+- `PUT /api/clinics/{id}` - Update clinic
+
+#### Users (Admin / SuperAdmin + `X-Clinic-Id` for SuperAdmin)
+- `GET /api/users` - List users (paginated, `role`, `isActive`, `search`)
+- `GET /api/users/{id}` - Get user
+- `POST /api/users` - Create user
+- `PUT /api/users/{id}` - Update user
+- `DELETE /api/users/{id}` - Deactivate user
+- `PUT /api/users/me` - Update own profile
+- `PUT /api/users/me/password` - Change password
 
 #### Patients
 - `GET /api/patients` - Get all patients (paginated)

@@ -7,8 +7,10 @@ namespace ClinicOS.Domain.Entities;
 /// <summary>
 /// Doctor entity representing doctor-specific details
 /// </summary>
-public class Doctor : AuditableEntity
+public class Doctor : AuditableEntity, ITenantEntity
 {
+    public int ClinicId { get; set; }
+
     [Required]
     public int UserId { get; set; }
 
@@ -39,6 +41,8 @@ public class Doctor : AuditableEntity
     public bool IsAvailable { get; set; } = true;
 
     // Navigation properties
+    public virtual Clinic Clinic { get; set; } = null!;
+
     [ForeignKey("UserId")]
     public virtual User User { get; set; } = null!;
 }

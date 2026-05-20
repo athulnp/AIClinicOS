@@ -8,8 +8,10 @@ namespace ClinicOS.Domain.Entities;
 /// <summary>
 /// Patient entity representing a patient in the clinic
 /// </summary>
-public class Patient : SoftDeleteEntity
+public class Patient : SoftDeleteEntity, ITenantEntity
 {
+    public int ClinicId { get; set; }
+
     [Required]
     [MaxLength(50)]
     public string PatientCode { get; set; } = string.Empty;
@@ -52,6 +54,7 @@ public class Patient : SoftDeleteEntity
     public string? Notes { get; set; }
 
     // Navigation properties
+    public virtual Clinic Clinic { get; set; } = null!;
     public virtual ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
     public virtual ICollection<Billing> Billings { get; set; } = new List<Billing>();
 }

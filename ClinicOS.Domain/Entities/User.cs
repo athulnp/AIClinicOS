@@ -9,6 +9,9 @@ namespace ClinicOS.Domain.Entities;
 /// </summary>
 public class User : AuditableEntity
 {
+    /// <summary>Null for platform SuperAdmin users.</summary>
+    public int? ClinicId { get; set; }
+
     [Required]
     [MaxLength(100)]
     public string Username { get; set; } = string.Empty;
@@ -42,6 +45,7 @@ public class User : AuditableEntity
     public DateTime? RefreshTokenExpiryTime { get; set; }
 
     // Navigation properties
+    public virtual Clinic? Clinic { get; set; }
     public virtual ICollection<Appointment> DoctorAppointments { get; set; } = new List<Appointment>();
     public virtual Doctor? DoctorDetails { get; set; }
 }

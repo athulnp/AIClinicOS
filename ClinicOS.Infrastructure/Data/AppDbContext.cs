@@ -1,3 +1,4 @@
+using ClinicOS.Application.Interfaces;
 using ClinicOS.Domain.Common;
 using ClinicOS.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -5,14 +6,18 @@ using Microsoft.EntityFrameworkCore;
 namespace ClinicOS.Infrastructure.Data;
 
 /// <summary>
-/// Application database context
+/// Application database context with multi-clinic tenant query filters.
 /// </summary>
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    private readonly ITenantContext _tenantContext;
+
+    public AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext tenantContext) : base(options)
     {
+        _tenantContext = tenantContext;
     }
 
+    public DbSet<Clinic> Clinics { get; set; }
     public DbSet<Patient> Patients { get; set; }
     public DbSet<Appointment> Appointments { get; set; }
     public DbSet<Billing> Billings { get; set; }
@@ -24,44 +29,72 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configure soft delete query filter globally
-        modelBuilder.Entity<Patient>().HasQueryFilter(p => !p.IsDeleted);
+        modelBuilder.Entity<Clinic>()
+            .HasIndex(c => c.Code)
+            .IsUnique();
 
-        // Configure indexes
+        modelBuilder.Entity<Patient>().HasQueryFilter(p =>
+            !p.IsDeleted && (!_tenantContext.HasClinic || p.ClinicId == _tenantContext.ClinicId));
+
         modelBuilder.Entity<Patient>()
-            .HasIndex(p => p.PatientCode)
+            .HasIndex(p => new { p.ClinicId, p.PatientCode })
             .IsUnique();
 
         modelBuilder.Entity<Patient>()
-            .HasIndex(p => p.PhoneNumber);
+            .HasIndex(p => new { p.ClinicId, p.PhoneNumber });
+
+        modelBuilder.Entity<User>().HasQueryFilter(u =>
+            !_tenantContext.HasClinic || u.ClinicId == _tenantContext.ClinicId);
 
         modelBuilder.Entity<User>()
-            .HasIndex(u => u.Username)
+            .HasIndex(u => new { u.ClinicId, u.Username })
             .IsUnique();
 
         modelBuilder.Entity<User>()
-            .HasIndex(u => u.Email)
+            .HasIndex(u => new { u.ClinicId, u.Email })
             .IsUnique();
 
-        modelBuilder.Entity<Billing>()
-            .HasIndex(b => b.InvoiceNumber)
-            .IsUnique();
+        modelBuilder.Entity<Appointment>().HasQueryFilter(a =>
+            !_tenantContext.HasClinic || a.ClinicId == _tenantContext.ClinicId);
 
         modelBuilder.Entity<Appointment>()
-            .HasIndex(a => new { a.DoctorId, a.AppointmentDate, a.StartTime });
+            .HasIndex(a => new { a.ClinicId, a.DoctorId, a.AppointmentDate, a.StartTime });
 
-        // Configure Doctor entity relationships
+        modelBuilder.Entity<Billing>().HasQueryFilter(b =>
+            !_tenantContext.HasClinic || b.ClinicId == _tenantContext.ClinicId);
+
+        modelBuilder.Entity<Billing>()
+            .HasIndex(b => new { b.ClinicId, b.InvoiceNumber })
+            .IsUnique();
+
+        modelBuilder.Entity<Doctor>().HasQueryFilter(d =>
+            !_tenantContext.HasClinic || d.ClinicId == _tenantContext.ClinicId);
+
+        modelBuilder.Entity<Doctor>()
+            .HasIndex(d => new { d.ClinicId, d.LicenseNumber })
+            .IsUnique();
+
+        modelBuilder.Entity<Reminder>().HasQueryFilter(r =>
+            !_tenantContext.HasClinic || r.ClinicId == _tenantContext.ClinicId);
+
+        modelBuilder.Entity<Clinic>()
+            .HasMany(c => c.Users)
+            .WithOne(u => u.Clinic)
+            .HasForeignKey(u => u.ClinicId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Clinic>()
+            .HasMany(c => c.Patients)
+            .WithOne(p => p.Clinic)
+            .HasForeignKey(p => p.ClinicId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         modelBuilder.Entity<Doctor>()
             .HasOne(d => d.User)
             .WithOne(u => u.DoctorDetails)
             .HasForeignKey<Doctor>(d => d.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Doctor>()
-            .HasIndex(d => d.LicenseNumber)
-            .IsUnique();
-
-        // Configure relationships
         modelBuilder.Entity<Appointment>()
             .HasOne(a => a.Patient)
             .WithMany(p => p.Appointments)
@@ -91,35 +124,70 @@ public class AppDbContext : DbContext
             .WithMany(a => a.Reminders)
             .HasForeignKey(r => r.AppointmentId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // SQL Server: no cascade from Clinic — avoids multiple cascade paths (e.g. Clinic→Appointment→Reminder vs Clinic→Reminder)
+        modelBuilder.Entity<Appointment>()
+            .HasOne(a => a.Clinic)
+            .WithMany()
+            .HasForeignKey(a => a.ClinicId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Billing>()
+            .HasOne(b => b.Clinic)
+            .WithMany()
+            .HasForeignKey(b => b.ClinicId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Doctor>()
+            .HasOne(d => d.Clinic)
+            .WithMany()
+            .HasForeignKey(d => d.ClinicId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Reminder>()
+            .HasOne(r => r.Clinic)
+            .WithMany()
+            .HasForeignKey(r => r.ClinicId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 
     public override int SaveChanges()
     {
+        ApplyTenantOnInsert();
         UpdateTimestamps();
         return base.SaveChanges();
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        ApplyTenantOnInsert();
         UpdateTimestamps();
         return base.SaveChangesAsync(cancellationToken);
     }
 
+    private void ApplyTenantOnInsert()
+    {
+        if (!_tenantContext.HasClinic)
+            return;
+
+        foreach (var entry in ChangeTracker.Entries<ITenantEntity>())
+        {
+            if (entry.State == EntityState.Added && entry.Entity.ClinicId == 0)
+            {
+                entry.Entity.ClinicId = _tenantContext.ClinicId!.Value;
+            }
+        }
+    }
+
     private void UpdateTimestamps()
     {
-        var entries = ChangeTracker.Entries<AuditableEntity>();
-
-        foreach (var entry in entries)
+        foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
         {
             if (entry.State == EntityState.Added)
-            {
                 entry.Entity.CreatedAt = DateTime.UtcNow;
-            }
 
             if (entry.State == EntityState.Modified)
-            {
                 entry.Entity.UpdatedAt = DateTime.UtcNow;
-            }
         }
     }
 }

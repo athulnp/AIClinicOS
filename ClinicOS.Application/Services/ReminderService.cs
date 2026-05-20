@@ -49,6 +49,7 @@ public class ReminderService : IReminderService
                 // Create reminder
                 var reminder = new Reminder
                 {
+                    ClinicId = appointment.ClinicId,
                     AppointmentId = appointment.Id,
                     Type = ReminderType.AppointmentReminder,
                     ScheduledFor = DateTime.UtcNow,
@@ -91,6 +92,7 @@ public class ReminderService : IReminderService
                 // Create follow-up reminder
                 var reminder = new Reminder
                 {
+                    ClinicId = appointment.ClinicId,
                     AppointmentId = appointment.Id,
                     Type = ReminderType.FollowUpReminder,
                     ScheduledFor = DateTime.UtcNow,

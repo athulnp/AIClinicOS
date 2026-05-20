@@ -8,6 +8,13 @@ namespace ClinicOS.Application.DTOs;
 /// </summary>
 public class LoginDto
 {
+    /// <summary>Clinic slug (e.g. demo-dental). Use this or <see cref="ClinicId"/>, not both.</summary>
+    [MaxLength(50)]
+    public string? ClinicCode { get; set; }
+
+    /// <summary>Clinic numeric id (e.g. 1). Use this or <see cref="ClinicCode"/>, not both.</summary>
+    public int? ClinicId { get; set; }
+
     [Required(ErrorMessage = "Username is required")]
     public string Username { get; set; } = string.Empty;
 
@@ -55,6 +62,9 @@ public class CreateUserDto
 
     [Required(ErrorMessage = "Role is required")]
     public UserRole Role { get; set; }
+
+    /// <summary>Target clinic when created by SuperAdmin. Ignored for clinic Admins (uses their clinic).</summary>
+    public int? ClinicId { get; set; }
 }
 
 /// <summary>
@@ -88,6 +98,8 @@ public class UpdateUserDto
 public class UserDto
 {
     public int Id { get; set; }
+    public int? ClinicId { get; set; }
+    public string? ClinicName { get; set; }
     public string Username { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
@@ -95,6 +107,42 @@ public class UserDto
     public UserRole Role { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>Self-service profile update (no role change).</summary>
+public class UpdateProfileDto
+{
+    [Required]
+    [MaxLength(200)]
+    public string FullName { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(200)]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(20)]
+    public string PhoneNumber { get; set; } = string.Empty;
+}
+
+public class ChangePasswordDto
+{
+    [Required]
+    public string CurrentPassword { get; set; } = string.Empty;
+
+    [Required]
+    [MinLength(6)]
+    public string NewPassword { get; set; } = string.Empty;
+}
+
+public class UserListQueryDto
+{
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public UserRole? Role { get; set; }
+    public bool? IsActive { get; set; }
+    public string? Search { get; set; }
 }
 
 /// <summary>

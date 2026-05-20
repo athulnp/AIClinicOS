@@ -58,6 +58,7 @@ public class BillingService : IBillingService
         var invoiceNumber = await GenerateInvoiceNumberAsync();
 
         var billing = _mapper.Map<Billing>(dto);
+        billing.ClinicId = patient.ClinicId;
         billing.InvoiceNumber = invoiceNumber;
         billing.PaidAmount = 0;
         billing.BalanceAmount = dto.TotalAmount;

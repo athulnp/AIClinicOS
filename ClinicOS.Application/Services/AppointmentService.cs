@@ -61,6 +61,7 @@ public class AppointmentService : IAppointmentService
         }
 
         var appointment = _mapper.Map<Appointment>(dto);
+        appointment.ClinicId = patient.ClinicId;
         appointment.Status = AppointmentStatus.Scheduled;
         appointment.CreatedBy = createdBy;
 

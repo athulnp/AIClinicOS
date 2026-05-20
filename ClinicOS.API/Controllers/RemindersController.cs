@@ -39,7 +39,7 @@ public class RemindersController : ControllerBase
     /// <summary>
     /// Manually trigger appointment reminders (Admin only)
     /// </summary>
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost("send-appointment-reminders")]
     public async Task<ActionResult> SendAppointmentReminders()
     {
@@ -50,7 +50,7 @@ public class RemindersController : ControllerBase
     /// <summary>
     /// Manually trigger follow-up reminders (Admin only)
     /// </summary>
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost("send-follow-up-reminders")]
     public async Task<ActionResult> SendFollowUpReminders()
     {

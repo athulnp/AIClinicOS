@@ -14,6 +14,16 @@
       "key": "token",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "clinicId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "clinicCode",
+      "value": "demo-dental",
+      "type": "string"
     }
   ],
   "item": [
@@ -27,7 +37,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin@123\"\n}",
+              "raw": "{\n  \"clinicId\": {{clinicId}},\n  \"username\": \"admin\",\n  \"password\": \"Admin@123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -96,6 +106,169 @@
               "raw": "{{baseUrl}}/auth/logout",
               "host": ["{{baseUrl}}"],
               "path": ["auth", "logout"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login SuperAdmin",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"superadmin\",\n  \"password\": \"SuperAdmin@123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Clinics",
+      "item": [
+        {
+          "name": "List Clinics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/clinics?pageNumber=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["clinics"],
+              "query": [
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Clinic",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"sunshine-dental\",\n  \"name\": \"Sunshine Dental\",\n  \"city\": \"Mumbai\",\n  \"country\": \"India\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clinics",
+              "host": ["{{baseUrl}}"],
+              "path": ["clinics"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Clinic By Code",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clinics/code/{{clinicCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["clinics", "code", "{{clinicCode}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "X-Clinic-Id", "value": "{{clinicId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users?pageNumber=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "X-Clinic-Id", "value": "{{clinicId}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"reception2\",\n  \"password\": \"Reception@123\",\n  \"fullName\": \"New Receptionist\",\n  \"email\": \"reception2@demodental.com\",\n  \"phoneNumber\": \"+911234567899\",\n  \"role\": 3\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile (me)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Updated Name\",\n  \"email\": \"admin@demodental.com\",\n  \"phoneNumber\": \"+911234567891\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password (me)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Admin@123\",\n  \"newPassword\": \"Admin@456\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/me/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me", "password"]
             }
           },
           "response": []

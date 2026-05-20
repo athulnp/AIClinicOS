@@ -8,8 +8,10 @@ namespace ClinicOS.Domain.Entities;
 /// <summary>
 /// Reminder entity for appointment and follow-up reminders
 /// </summary>
-public class Reminder : AuditableEntity
+public class Reminder : AuditableEntity, ITenantEntity
 {
+    public int ClinicId { get; set; }
+
     [Required]
     public int AppointmentId { get; set; }
 
@@ -34,6 +36,8 @@ public class Reminder : AuditableEntity
     public string? SentVia { get; set; } // Future: WhatsApp, SMS, Email
 
     // Navigation properties
+    public virtual Clinic Clinic { get; set; } = null!;
+
     [ForeignKey("AppointmentId")]
     public virtual Appointment Appointment { get; set; } = null!;
 }
