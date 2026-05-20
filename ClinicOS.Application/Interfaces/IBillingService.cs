@@ -1,0 +1,18 @@
+using ClinicOS.Application.Common;
+using ClinicOS.Application.DTOs;
+
+namespace ClinicOS.Application.Interfaces;
+
+/// <summary>
+/// Billing service interface
+/// </summary>
+public interface IBillingService
+{
+    Task<ApiResponse<BillingDto>> CreateBillingAsync(CreateBillingDto dto, string createdBy);
+    Task<ApiResponse<BillingDto>> RecordPaymentAsync(int id, RecordPaymentDto dto, string updatedBy);
+    Task<ApiResponse<BillingDto>> GetBillingByIdAsync(int id);
+    Task<ApiResponse<BillingDto>> GetBillingByInvoiceNumberAsync(string invoiceNumber);
+    Task<PagedResponse<BillingDto>> GetPatientBillingHistoryAsync(int patientId, PaginationRequest pagination);
+    Task<PagedResponse<BillingDto>> GetAllBillingsAsync(PaginationRequest pagination);
+    Task<PagedResponse<OutstandingBalanceReportDto>> GetOutstandingBalanceReportAsync(PaginationRequest pagination);
+}

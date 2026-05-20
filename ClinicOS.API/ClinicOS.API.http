@@ -1,0 +1,6 @@
+@ClinicOS.API_HostAddress = http://localhost:5130
+
+GET {{ClinicOS.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

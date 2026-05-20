@@ -1,0 +1,249 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                                                                               ║
+║              ✅ POSTMAN COLLECTION - DOCTOR ENDPOINTS ADDED                   ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+📊 QUICK REFERENCE - ALL ENDPOINTS
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ DOCTORS - NEW ENDPOINTS (9 total)                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. GET /api/doctors                                                        │
+│     └─ Get all doctors                                                      │
+│        Authorization: Any authenticated user                                │
+│        Response: [ { doctor objects } ]                                     │
+│                                                                             │
+│  2. GET /api/doctors/1                                                      │
+│     └─ Get doctor by ID                                                     │
+│        Authorization: Any authenticated user                                │
+│        Response: { doctor object }                                          │
+│        Example: /api/doctors/1                                              │
+│                                                                             │
+│  3. GET /api/doctors/user/2                                                 │
+│     └─ Get doctor by User ID (one-to-one lookup)                            │
+│        Authorization: Any authenticated user                                │
+│        Response: { doctor object }                                          │
+│        Example: /api/doctors/user/2                                         │
+│                                                                             │
+│  4. GET /api/doctors/license/DEN-2024-001                                   │
+│     └─ Get doctor by License Number (unique)                                │
+│        Authorization: Any authenticated user                                │
+│        Response: { doctor object }                                          │
+│        Example: /api/doctors/license/DEN-2024-001                           │
+│                                                                             │
+│  5. GET /api/doctors/specialization/Orthodontist                             │
+│     └─ Get doctors filtered by specialization                               │
+│        Authorization: Any authenticated user                                │
+│        Response: [ { doctor objects } ]                                     │
+│        Example: /api/doctors/specialization/Orthodontist                    │
+│                                                                             │
+│  6. GET /api/doctors/available                                               │
+│     └─ Get available doctors (isAvailable=true)                             │
+│        Authorization: Any authenticated user                                │
+│        Response: [ { doctor objects } ]                                     │
+│        Use for: Appointment booking dropdown                                │
+│                                                                             │
+│  7. POST /api/doctors                                                       │
+│     └─ Create new doctor profile                                            │
+│        Authorization: Admin only                                            │
+│        Request body:                                                        │
+│        {                                                                    │
+│          "userId": 2,                                                       │
+│          "specialization": "Orthodontist",                                  │
+│          "licenseNumber": "DEN-2024-001",                                   │
+│          "yearsOfExperience": 8,                                            │
+│          "bio": "Specializes in cosmetic dentistry",                        │
+│          "consultationFee": 500.00,                                         │
+│          "department": "Orthodontics",                                      │
+│          "clinicLocation": "Main Branch",                                   │
+│          "isAvailable": true                                                │
+│        }                                                                    │
+│        Response: 201 Created { doctor object }                              │
+│                                                                             │
+│  8. PUT /api/doctors/1                                                      │
+│     └─ Update doctor details                                                │
+│        Authorization: Admin or Doctor (own profile)                         │
+│        Request body: (all fields optional)                                  │
+│        {                                                                    │
+│          "consultationFee": 600.00,                                         │
+│          "isAvailable": false                                               │
+│        }                                                                    │
+│        Response: 200 OK { updated doctor object }                           │
+│                                                                             │
+│  9. DELETE /api/doctors/1                                                   │
+│     └─ Delete doctor profile                                                │
+│        Authorization: Admin only                                            │
+│        Response: 204 No Content                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+🚀 QUICK START - HOW TO USE POSTMAN COLLECTION
+═══════════════════════════════════════════════════════════════════════════════
+
+Step 1: Import Collection
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 1. Open Postman                                                          │
+│ 2. Click "Import" button (top left)                                      │
+│ 3. Select PostmanCollection.json file                                    │
+│ 4. Click "Import"                                                        │
+└──────────────────────────────────────────────────────────────────────────┘
+
+Step 2: Login & Get Token
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 1. Expand "Authentication" → "Login"                                     │
+│ 2. Click "Send"                                                          │
+│ 3. Copy the "token" value from response                                  │
+│ 4. Go to Collections → Variables                                         │
+│ 5. Paste token in "token" field value                                    │
+│ 6. Click "Save"                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+Step 3: Test Doctor Endpoints
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 1. Expand "Doctors" section                                              │
+│ 2. Select any endpoint                                                   │
+│ 3. Review the request (modify if needed)                                 │
+│ 4. Click "Send"                                                          │
+│ 5. Check response status & body                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+
+📝 COMMON TEST SCENARIOS
+═══════════════════════════════════════════════════════════════════════════════
+
+Scenario 1: Create Doctor & Verify
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 1. POST /api/doctors (Create Doctor)                                     │
+│    - Update userId if needed                                             │
+│    - Update other fields as desired                                      │
+│    - Click Send                                                          │
+│    - Note the returned doctor ID (e.g., 1)                               │
+│                                                                          │
+│ 2. GET /api/doctors/1 (Verify Creation)                                  │
+│    - Use the ID from step 1                                              │
+│    - Click Send                                                          │
+│    - Should return the same doctor data                                  │
+│                                                                          │
+│ 3. GET /api/doctors (List All)                                           │
+│    - Click Send                                                          │
+│    - Should see doctor in the list                                       │
+└──────────────────────────────────────────────────────────────────────────┘
+
+Scenario 2: Find Available Doctors
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 1. GET /api/doctors/available                                            │
+│    - Click Send                                                          │
+│    - See list of available doctors                                       │
+│                                                                          │
+│ 2. GET /api/doctors/specialization/Orthodontist                          │
+│    - Click Send                                                          │
+│    - See all orthodontists                                               │
+│                                                                          │
+│ 3. Use this for appointment booking selection                            │
+└──────────────────────────────────────────────────────────────────────────┘
+
+Scenario 3: Update Doctor Profile
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 1. PUT /api/doctors/1                                                    │
+│    - Update body with new values                                         │
+│    - Click Send                                                          │
+│    - Should return updated doctor                                        │
+│                                                                          │
+│ 2. GET /api/doctors/1                                                    │
+│    - Click Send                                                          │
+│    - Verify changes were saved                                           │
+└──────────────────────────────────────────────────────────────────────────┘
+
+📋 ENDPOINT QUICK REFERENCE CARD
+═══════════════════════════════════════════════════════════════════════════════
+
+GET ENDPOINTS (Read-only, All authenticated users):
+┌──────────────────────────────────────────────────────────────────────────┐
+│ URL Pattern                             │ Purpose                       │
+├─────────────────────────────────────────┼──────────────────────────────┤
+│ GET /api/doctors                        │ Get all doctors              │
+│ GET /api/doctors/1                      │ Get by ID                    │
+│ GET /api/doctors/user/2                 │ Get by User ID               │
+│ GET /api/doctors/license/LICENSE-123    │ Get by License Number        │
+│ GET /api/doctors/specialization/SPEC    │ Get by Specialization        │
+│ GET /api/doctors/available              │ Get available doctors        │
+└──────────────────────────────────────────────────────────────────────────┘
+
+MUTATION ENDPOINTS (Write operations):
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Method │ URL Pattern        │ Authorization │ Purpose                   │
+├────────┼────────────────────┼───────────────┼──────────────────────────┤
+│ POST   │ /api/doctors       │ Admin         │ Create doctor            │
+│ PUT    │ /api/doctors/1     │ Admin/Doctor  │ Update doctor            │
+│ DELETE │ /api/doctors/1     │ Admin         │ Delete doctor            │
+└──────────────────────────────────────────────────────────────────────────┘
+
+✅ WHAT CHANGED IN POSTMAN COLLECTION
+═══════════════════════════════════════════════════════════════════════════════
+
+BEFORE:
+├── Authentication (4)
+├── Patients (6)
+├── Appointments (6)
+├── Billing (4)
+└── Reminders (2)
+    Total: 22 endpoints
+
+AFTER:
+├── Authentication (4)
+├── Patients (6)
+├── Appointments (6)
+├── Billing (4)
+├── Reminders (2)
+└── Doctors (9) ← NEW!
+    Total: 31 endpoints
+
+✨ BENEFITS
+─────────────────────────────────────────────────────────────────────────────
+✓ All Doctor endpoints pre-built and tested
+✓ Sample request bodies included
+✓ Authorization headers pre-configured
+✓ Variables for easy environment switching
+✓ Ready for API testing and documentation
+✓ Can be shared with team members
+✓ Works with Postman's automation features
+
+🔧 TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+Issue: 401 Unauthorized
+→ Solution: Login first and update {{token}} variable
+
+Issue: 500 Internal Server Error
+→ Solution: Ensure Doctor table exists in database (see QUICK_FIX.txt)
+
+Issue: Base URL not working
+→ Solution: Update {{baseUrl}} variable to match your server
+   Default: https://localhost:5001/api
+   Change if using different port or server
+
+Issue: Cannot find endpoint
+→ Solution: Make sure you're using the Doctors section
+   (Some older collections may not have it)
+
+🎯 NEXT STEPS
+═════════════════════════════════════════════════════════════════════════════
+
+1. ✓ Import PostmanCollection.json into Postman
+2. ✓ Authenticate and get JWT token
+3. ✓ Test GET /api/doctors endpoint
+4. ✓ Create sample doctor with POST endpoint
+5. ✓ Test all read endpoints
+6. ✓ Test update and delete operations
+7. ✓ Integrate with Appointments workflow
+8. ✓ Integrate with Billing workflow
+
+═════════════════════════════════════════════════════════════════════════════════
+
+For complete documentation, see: POSTMAN_COLLECTION_GUIDE.md
+For technical details, see: DOCTOR_IMPLEMENTATION.md
+For quick fixes, see: QUICK_FIX.txt
+
+✨ Your Postman collection is now ready to use! 🚀
