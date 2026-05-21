@@ -2,7 +2,9 @@
 
 AI Clinic OS supports onboarding **multiple dental clinics** on one platform. Each clinic's data is isolated by `ClinicId`.
 
-## Roles
+## Roles & permissions (RBAC)
+
+Access is **database-backed**: `Permission` → `Role` → `User` via `UserRoleAssignments`. JWT includes `permission` claims; APIs use policy checks (e.g. `patients.read`).
 
 | Role | Scope | Login |
 |------|-------|-------|
@@ -10,6 +12,8 @@ AI Clinic OS supports onboarding **multiple dental clinics** on one platform. Ea
 | **Admin** | One clinic — users, settings | `clinicCode` + `username` + `password` |
 | **Doctor** | One clinic — clinical work | Same as Admin |
 | **Receptionist** | One clinic — front desk | Same as Admin |
+
+List assignable clinic roles: `GET /api/roles` (requires `users.read`). Create users with `roleId` from that list (not the old enum).
 
 ## Tenant isolation
 

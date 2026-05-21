@@ -1,3 +1,4 @@
+using ClinicOS.Application.Common;
 using ClinicOS.Application.DTOs;
 using ClinicOS.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -5,9 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ClinicOS.API.Controllers;
 
-/// <summary>
-/// Doctor management controller
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -22,9 +20,7 @@ public class DoctorsController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get all doctors
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.DoctorsRead)]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<DoctorResponseDto>>> GetAllDoctors()
     {
@@ -40,9 +36,7 @@ public class DoctorsController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get doctor by ID
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.DoctorsRead)]
     [HttpGet("{id}")]
     public async Task<ActionResult<DoctorResponseDto>> GetDoctorById(int id)
     {
@@ -50,9 +44,7 @@ public class DoctorsController : ControllerBase
         {
             var doctor = await _doctorService.GetDoctorByIdAsync(id);
             if (doctor == null)
-            {
                 return NotFound(new { message = "Doctor not found" });
-            }
             return Ok(doctor);
         }
         catch (Exception ex)
@@ -62,9 +54,7 @@ public class DoctorsController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get doctor by user ID
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.DoctorsRead)]
     [HttpGet("user/{userId}")]
     public async Task<ActionResult<DoctorResponseDto>> GetDoctorByUserId(int userId)
     {
@@ -72,9 +62,7 @@ public class DoctorsController : ControllerBase
         {
             var doctor = await _doctorService.GetDoctorByUserIdAsync(userId);
             if (doctor == null)
-            {
                 return NotFound(new { message = "Doctor details not found for this user" });
-            }
             return Ok(doctor);
         }
         catch (Exception ex)
@@ -84,9 +72,7 @@ public class DoctorsController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get doctor by license number
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.DoctorsRead)]
     [HttpGet("license/{licenseNumber}")]
     public async Task<ActionResult<DoctorResponseDto>> GetDoctorByLicenseNumber(string licenseNumber)
     {
@@ -94,9 +80,7 @@ public class DoctorsController : ControllerBase
         {
             var doctor = await _doctorService.GetDoctorByLicenseNumberAsync(licenseNumber);
             if (doctor == null)
-            {
                 return NotFound(new { message = "Doctor not found with this license number" });
-            }
             return Ok(doctor);
         }
         catch (Exception ex)
@@ -106,9 +90,7 @@ public class DoctorsController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get doctors by specialization
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.DoctorsRead)]
     [HttpGet("specialization/{specialization}")]
     public async Task<ActionResult<IEnumerable<DoctorResponseDto>>> GetDoctorsBySpecialization(string specialization)
     {
@@ -124,9 +106,7 @@ public class DoctorsController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get available doctors
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.DoctorsRead)]
     [HttpGet("available")]
     public async Task<ActionResult<IEnumerable<DoctorResponseDto>>> GetAvailableDoctors()
     {
@@ -142,19 +122,14 @@ public class DoctorsController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Create doctor details for a user
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.DoctorsManage)]
     [HttpPost]
-    [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<ActionResult<DoctorResponseDto>> CreateDoctor([FromBody] CreateDoctorDto dto)
     {
         try
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
             var doctor = await _doctorService.CreateDoctorAsync(dto);
             return CreatedAtAction(nameof(GetDoctorById), new { id = doctor.Id }, doctor);
@@ -176,19 +151,14 @@ public class DoctorsController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Update doctor details
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.DoctorsWrite)]
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin,SuperAdmin,Doctor")]
     public async Task<ActionResult<DoctorResponseDto>> UpdateDoctor(int id, [FromBody] UpdateDoctorDto dto)
     {
         try
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
             var doctor = await _doctorService.UpdateDoctorAsync(id, dto);
             return Ok(doctor);
@@ -210,20 +180,15 @@ public class DoctorsController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Delete doctor details
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.DoctorsManage)]
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<ActionResult> DeleteDoctor(int id)
     {
         try
         {
             var result = await _doctorService.DeleteDoctorAsync(id);
             if (!result)
-            {
                 return NotFound(new { message = "Doctor not found" });
-            }
             return NoContent();
         }
         catch (InvalidOperationException ex)

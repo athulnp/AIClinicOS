@@ -7,9 +7,6 @@ using System.Security.Claims;
 
 namespace ClinicOS.API.Controllers;
 
-/// <summary>
-/// Billing and payment management controller
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -22,9 +19,7 @@ public class BillingController : ControllerBase
         _billingService = billingService;
     }
 
-    /// <summary>
-    /// Get all billings with pagination
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.BillingRead)]
     [HttpGet]
     public async Task<ActionResult<PagedResponse<BillingDto>>> GetAllBillings([FromQuery] PaginationRequest pagination)
     {
@@ -32,37 +27,27 @@ public class BillingController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get billing by ID
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.BillingRead)]
     [HttpGet("{id}")]
     public async Task<ActionResult<BillingDto>> GetBilling(int id)
     {
         var result = await _billingService.GetBillingByIdAsync(id);
         if (!result.Success)
-        {
             return NotFound(result);
-        }
         return Ok(result.Data);
     }
 
-    /// <summary>
-    /// Get billing by invoice number
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.BillingRead)]
     [HttpGet("invoice/{invoiceNumber}")]
     public async Task<ActionResult<BillingDto>> GetBillingByInvoiceNumber(string invoiceNumber)
     {
         var result = await _billingService.GetBillingByInvoiceNumberAsync(invoiceNumber);
         if (!result.Success)
-        {
             return NotFound(result);
-        }
         return Ok(result.Data);
     }
 
-    /// <summary>
-    /// Get patient billing history
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.BillingRead)]
     [HttpGet("patient/{patientId}")]
     public async Task<ActionResult<PagedResponse<BillingDto>>> GetPatientBillingHistory(
         int patientId,
@@ -72,9 +57,7 @@ public class BillingController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get outstanding balance report
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.BillingRead)]
     [HttpGet("outstanding")]
     public async Task<ActionResult<PagedResponse<OutstandingBalanceReportDto>>> GetOutstandingBalanceReport(
         [FromQuery] PaginationRequest pagination)
@@ -83,24 +66,18 @@ public class BillingController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Create new billing record
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.BillingWrite)]
     [HttpPost]
     public async Task<ActionResult<BillingDto>> CreateBilling([FromBody] CreateBillingDto dto)
     {
         var createdBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
         var result = await _billingService.CreateBillingAsync(dto, createdBy);
         if (!result.Success)
-        {
             return BadRequest(result);
-        }
         return CreatedAtAction(nameof(GetBilling), new { id = result.Data!.Id }, result.Data);
     }
 
-    /// <summary>
-    /// Record payment for a billing
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.BillingWrite)]
     [HttpPost("{id}/payment")]
     public async Task<ActionResult<BillingDto>> RecordPayment(
         int id,
@@ -109,9 +86,7 @@ public class BillingController : ControllerBase
         var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
         var result = await _billingService.RecordPaymentAsync(id, dto, updatedBy);
         if (!result.Success)
-        {
             return BadRequest(result);
-        }
         return Ok(result.Data);
     }
 }

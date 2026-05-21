@@ -5,7 +5,6 @@ using ClinicOS.Application.Common;
 using ClinicOS.Application.DTOs;
 using ClinicOS.Application.Interfaces;
 using ClinicOS.Domain.Entities;
-using ClinicOS.Domain.Enums;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -49,7 +48,7 @@ public class AuthService : IAuthService
         if (!hasClinicContext)
         {
             user = await _userRepository.GetByUsernameAsync(dto.Username, null);
-            if (user == null || user.Role != UserRole.SuperAdmin)
+            if (user == null || !UserAuthHelper.HasRole(user, RoleNames.SuperAdmin))
                 return ApiResponse<LoginResponseDto>.ErrorResponse("Invalid username or password");
         }
         else
@@ -65,6 +64,9 @@ public class AuthService : IAuthService
 
         if (!user.IsActive)
             return ApiResponse<LoginResponseDto>.ErrorResponse("User account is inactive");
+
+        if (!user.UserRoleAssignments.Any())
+            return ApiResponse<LoginResponseDto>.ErrorResponse("User has no assigned roles");
 
         if (!PasswordHasher.Verify(dto.Password, user.PasswordHash, out var needsRehash))
             return ApiResponse<LoginResponseDto>.ErrorResponse("Invalid username or password");
@@ -163,19 +165,7 @@ public class AuthService : IAuthService
 
     private string GenerateJwtToken(User user, Clinic? clinic)
     {
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Name, user.Username),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role.ToString())
-        };
-
-        if (user.ClinicId.HasValue && clinic != null)
-        {
-            claims.Add(new Claim(TenantConstants.ClinicIdClaim, user.ClinicId.Value.ToString()));
-            claims.Add(new Claim(TenantConstants.ClinicCodeClaim, clinic.Code));
-        }
+        var claims = UserAuthHelper.BuildAuthClaims(user, clinic);
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
             _configuration["Jwt:Key"] ?? "YourSuperSecretKeyThatIsAtLeast32CharactersLong!"));
@@ -194,17 +184,23 @@ public class AuthService : IAuthService
     private static string GenerateRefreshToken() =>
         Guid.NewGuid().ToString() + "-" + Guid.NewGuid().ToString();
 
-    private static UserDto MapToUserDto(User user, Clinic? clinic) => new()
+    private static UserDto MapToUserDto(User user, Clinic? clinic)
     {
-        Id = user.Id,
-        ClinicId = user.ClinicId,
-        ClinicName = clinic?.Name,
-        Username = user.Username,
-        FullName = user.FullName,
-        Email = user.Email,
-        PhoneNumber = user.PhoneNumber,
-        Role = user.Role,
-        IsActive = user.IsActive,
-        CreatedAt = user.CreatedAt
-    };
+        var primaryRole = user.UserRoleAssignments.FirstOrDefault()?.Role;
+        return new UserDto
+        {
+            Id = user.Id,
+            ClinicId = user.ClinicId,
+            ClinicName = clinic?.Name,
+            Username = user.Username,
+            FullName = user.FullName,
+            Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            RoleId = primaryRole?.Id ?? 0,
+            RoleName = primaryRole?.Name ?? string.Empty,
+            Permissions = UserAuthHelper.GetPermissionCodes(user),
+            IsActive = user.IsActive,
+            CreatedAt = user.CreatedAt
+        };
+    }
 }

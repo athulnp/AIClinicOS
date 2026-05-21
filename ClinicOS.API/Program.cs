@@ -1,3 +1,4 @@
+using ClinicOS.API.Authorization;
 using ClinicOS.API.Middleware;
 using ClinicOS.API.Services;
 using ClinicOS.Application.DTOs;
@@ -43,6 +44,7 @@ builder.Services.AddScoped<IPatientRepository, PatientRepository>();
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<IBillingRepository, BillingRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRbacRepository, RbacRepository>();
 builder.Services.AddScoped<IReminderRepository, ReminderRepository>();
 builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
 
@@ -90,7 +92,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddPermissionPolicies();
 
 // Configure Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();

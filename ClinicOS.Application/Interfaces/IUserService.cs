@@ -1,12 +1,11 @@
 using ClinicOS.Application.Common;
 using ClinicOS.Application.DTOs;
-using ClinicOS.Domain.Enums;
 
 namespace ClinicOS.Application.Interfaces;
 
 public interface IUserService
 {
-    Task<ApiResponse<UserDto>> CreateUserAsync(CreateUserDto dto, string createdBy, int? callerClinicId, UserRole callerRole);
+    Task<ApiResponse<UserDto>> CreateUserAsync(CreateUserDto dto, string createdBy, int? callerClinicId);
     Task<ApiResponse<UserDto>> UpdateUserAsync(int id, UpdateUserDto dto, string updatedBy);
     Task<ApiResponse> DeactivateUserAsync(int id, string deactivatedBy);
     Task<ApiResponse<UserDto>> GetUserByIdAsync(int id);

@@ -1,4 +1,3 @@
-using ClinicOS.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace ClinicOS.Application.DTOs;
@@ -61,7 +60,8 @@ public class CreateUserDto
     public string PhoneNumber { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Role is required")]
-    public UserRole Role { get; set; }
+    [Range(1, int.MaxValue, ErrorMessage = "Valid role id is required")]
+    public int RoleId { get; set; }
 
     /// <summary>Target clinic when created by SuperAdmin. Ignored for clinic Admins (uses their clinic).</summary>
     public int? ClinicId { get; set; }
@@ -87,7 +87,8 @@ public class UpdateUserDto
     public string PhoneNumber { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Role is required")]
-    public UserRole Role { get; set; }
+    [Range(1, int.MaxValue, ErrorMessage = "Valid role id is required")]
+    public int RoleId { get; set; }
 
     public bool IsActive { get; set; }
 }
@@ -104,7 +105,9 @@ public class UserDto
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
-    public UserRole Role { get; set; }
+    public int RoleId { get; set; }
+    public string RoleName { get; set; } = string.Empty;
+    public IReadOnlyList<string> Permissions { get; set; } = Array.Empty<string>();
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
 }
@@ -140,7 +143,7 @@ public class UserListQueryDto
 {
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;
-    public UserRole? Role { get; set; }
+    public int? RoleId { get; set; }
     public bool? IsActive { get; set; }
     public string? Search { get; set; }
 }

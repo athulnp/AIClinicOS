@@ -1,6 +1,5 @@
 using ClinicOS.Application.Common;
 using ClinicOS.Application.Interfaces;
-using ClinicOS.Domain.Enums;
 using System.Security.Claims;
 
 namespace ClinicOS.API.Middleware;
@@ -21,8 +20,7 @@ public class TenantMiddleware
     {
         if (context.User.Identity?.IsAuthenticated == true)
         {
-            var role = context.User.FindFirst(ClaimTypes.Role)?.Value;
-            if (role == UserRole.SuperAdmin.ToString())
+            if (context.User.IsInRole(RoleNames.SuperAdmin))
             {
                 tenantContext.SetSuperAdmin();
 

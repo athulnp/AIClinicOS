@@ -22,6 +22,10 @@ public class AppDbContext : DbContext
     public DbSet<Appointment> Appointments { get; set; }
     public DbSet<Billing> Billings { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<Permission> Permissions { get; set; }
+    public DbSet<Role> Roles { get; set; }
+    public DbSet<RolePermission> RolePermissions { get; set; }
+    public DbSet<UserRoleAssignment> UserRoleAssignments { get; set; }
     public DbSet<Doctor> Doctors { get; set; }
     public DbSet<Reminder> Reminders { get; set; }
 
@@ -53,6 +57,56 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>()
             .HasIndex(u => new { u.ClinicId, u.Email })
             .IsUnique();
+
+        modelBuilder.Entity<Permission>()
+            .HasIndex(p => p.Code)
+            .IsUnique();
+
+        modelBuilder.Entity<Role>()
+            .HasIndex(r => new { r.Name, r.ClinicId })
+            .IsUnique()
+            .HasFilter("[ClinicId] IS NOT NULL");
+
+        modelBuilder.Entity<Role>()
+            .HasIndex(r => r.Name)
+            .IsUnique()
+            .HasFilter("[ClinicId] IS NULL");
+
+        modelBuilder.Entity<RolePermission>()
+            .HasKey(rp => new { rp.RoleId, rp.PermissionId });
+
+        modelBuilder.Entity<RolePermission>()
+            .HasOne(rp => rp.Role)
+            .WithMany(r => r.RolePermissions)
+            .HasForeignKey(rp => rp.RoleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RolePermission>()
+            .HasOne(rp => rp.Permission)
+            .WithMany(p => p.RolePermissions)
+            .HasForeignKey(rp => rp.PermissionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<UserRoleAssignment>()
+            .HasKey(ura => new { ura.UserId, ura.RoleId });
+
+        modelBuilder.Entity<UserRoleAssignment>()
+            .HasOne(ura => ura.User)
+            .WithMany(u => u.UserRoleAssignments)
+            .HasForeignKey(ura => ura.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<UserRoleAssignment>()
+            .HasOne(ura => ura.Role)
+            .WithMany(r => r.UserAssignments)
+            .HasForeignKey(ura => ura.RoleId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Role>()
+            .HasOne(r => r.Clinic)
+            .WithMany()
+            .HasForeignKey(r => r.ClinicId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Appointment>().HasQueryFilter(a =>
             !_tenantContext.HasClinic || a.ClinicId == _tenantContext.ClinicId);

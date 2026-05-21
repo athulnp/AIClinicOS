@@ -3,9 +3,6 @@ using FluentValidation;
 
 namespace ClinicOS.Application.Validators;
 
-/// <summary>
-/// Validator for LoginDto
-/// </summary>
 public class LoginValidator : AbstractValidator<LoginDto>
 {
     public LoginValidator()
@@ -27,9 +24,6 @@ public class LoginValidator : AbstractValidator<LoginDto>
     }
 }
 
-/// <summary>
-/// Validator for CreateUserDto
-/// </summary>
 public class CreateUserValidator : AbstractValidator<CreateUserDto>
 {
     public CreateUserValidator()
@@ -56,9 +50,8 @@ public class CreateUserValidator : AbstractValidator<CreateUserDto>
             .MaximumLength(20).WithMessage("Phone number cannot exceed 20 characters")
             .Matches(@"^[0-9+\-\s()]+$").WithMessage("Invalid phone number format");
 
-        RuleFor(x => x.Role)
-            .IsInEnum().WithMessage("Invalid role")
-            .NotEqual(Domain.Enums.UserRole.SuperAdmin).WithMessage("Cannot assign SuperAdmin role");
+        RuleFor(x => x.RoleId)
+            .GreaterThan(0).WithMessage("Valid role id is required");
     }
 }
 
@@ -82,9 +75,6 @@ public class ChangePasswordValidator : AbstractValidator<ChangePasswordDto>
     }
 }
 
-/// <summary>
-/// Validator for UpdateUserDto
-/// </summary>
 public class UpdateUserValidator : AbstractValidator<UpdateUserDto>
 {
     public UpdateUserValidator()
@@ -103,8 +93,7 @@ public class UpdateUserValidator : AbstractValidator<UpdateUserDto>
             .MaximumLength(20).WithMessage("Phone number cannot exceed 20 characters")
             .Matches(@"^[0-9+\-\s()]+$").WithMessage("Invalid phone number format");
 
-        RuleFor(x => x.Role)
-            .IsInEnum().WithMessage("Invalid role")
-            .NotEqual(Domain.Enums.UserRole.SuperAdmin).WithMessage("Cannot assign SuperAdmin role");
+        RuleFor(x => x.RoleId)
+            .GreaterThan(0).WithMessage("Valid role id is required");
     }
 }

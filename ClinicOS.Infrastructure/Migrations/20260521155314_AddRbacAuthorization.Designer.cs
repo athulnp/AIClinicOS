@@ -4,6 +4,7 @@ using ClinicOS.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ClinicOS.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260521155314_AddRbacAuthorization")]
+    partial class AddRbacAuthorization
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -489,10 +492,6 @@ namespace ClinicOS.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ClinicId");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasFilter("[ClinicId] IS NULL");
 
                     b.HasIndex("Name", "ClinicId")
                         .IsUnique()

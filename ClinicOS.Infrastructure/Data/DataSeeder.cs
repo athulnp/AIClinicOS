@@ -9,6 +9,8 @@ public static class DataSeeder
 {
     public static async Task SeedAsync(AppDbContext context)
     {
+        await RbacSeeder.SeedAsync(context);
+
         Clinic? demoClinic = await context.Clinics.FirstOrDefaultAsync(c => c.Code == "demo-dental");
         if (demoClinic == null)
         {
@@ -31,24 +33,25 @@ public static class DataSeeder
 
         if (!await context.Users.AnyAsync(u => u.Username == "superadmin" && u.ClinicId == null))
         {
-            context.Users.Add(new User
+            var superAdmin = new User
             {
                 Username = "superadmin",
                 PasswordHash = PasswordHasher.Hash("SuperAdmin@123"),
                 FullName = "Platform Super Admin",
                 Email = "superadmin@clinicos.com",
                 PhoneNumber = "+10000000001",
-                Role = UserRole.SuperAdmin,
                 ClinicId = null,
                 IsActive = true,
                 CreatedBy = "System"
-            });
+            };
+            context.Users.Add(superAdmin);
             await context.SaveChangesAsync();
+            await RbacSeeder.AssignRoleIfMissingAsync(context, superAdmin.Id, RoleNames.SuperAdmin);
         }
 
         if (!await context.Users.AnyAsync(u => u.Username == "admin" && u.ClinicId == demoClinic.Id))
         {
-            context.Users.Add(new User
+            var admin = new User
             {
                 ClinicId = demoClinic.Id,
                 Username = "admin",
@@ -56,11 +59,12 @@ public static class DataSeeder
                 FullName = "Clinic Administrator",
                 Email = "admin@demodental.com",
                 PhoneNumber = "+911234567891",
-                Role = UserRole.Admin,
                 IsActive = true,
                 CreatedBy = "System"
-            });
+            };
+            context.Users.Add(admin);
             await context.SaveChangesAsync();
+            await RbacSeeder.AssignRoleIfMissingAsync(context, admin.Id, RoleNames.Admin);
         }
 
         if (!await context.Users.AnyAsync(u => u.Username == "doctor1" && u.ClinicId == demoClinic.Id))
@@ -73,12 +77,12 @@ public static class DataSeeder
                 FullName = "Dr. Sarah Smith",
                 Email = "doctor1@demodental.com",
                 PhoneNumber = "+911234567892",
-                Role = UserRole.Doctor,
                 IsActive = true,
                 CreatedBy = "System"
             };
             context.Users.Add(doctorUser);
             await context.SaveChangesAsync();
+            await RbacSeeder.AssignRoleIfMissingAsync(context, doctorUser.Id, RoleNames.Doctor);
 
             context.Doctors.Add(new Doctor
             {
@@ -97,7 +101,7 @@ public static class DataSeeder
 
         if (!await context.Users.AnyAsync(u => u.Username == "reception1" && u.ClinicId == demoClinic.Id))
         {
-            context.Users.Add(new User
+            var reception = new User
             {
                 ClinicId = demoClinic.Id,
                 Username = "reception1",
@@ -105,11 +109,12 @@ public static class DataSeeder
                 FullName = "Jane Reception",
                 Email = "reception1@demodental.com",
                 PhoneNumber = "+911234567893",
-                Role = UserRole.Receptionist,
                 IsActive = true,
                 CreatedBy = "System"
-            });
+            };
+            context.Users.Add(reception);
             await context.SaveChangesAsync();
+            await RbacSeeder.AssignRoleIfMissingAsync(context, reception.Id, RoleNames.Receptionist);
         }
 
         if (!await context.Patients.AnyAsync(p => p.ClinicId == demoClinic.Id))

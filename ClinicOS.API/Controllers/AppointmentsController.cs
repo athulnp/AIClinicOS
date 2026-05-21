@@ -7,9 +7,6 @@ using System.Security.Claims;
 
 namespace ClinicOS.API.Controllers;
 
-/// <summary>
-/// Appointment management controller
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -22,9 +19,7 @@ public class AppointmentsController : ControllerBase
         _appointmentService = appointmentService;
     }
 
-    /// <summary>
-    /// Get all appointments with pagination
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.AppointmentsRead)]
     [HttpGet]
     public async Task<ActionResult<PagedResponse<AppointmentDto>>> GetAllAppointments([FromQuery] PaginationRequest pagination)
     {
@@ -32,23 +27,17 @@ public class AppointmentsController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get appointment by ID
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.AppointmentsRead)]
     [HttpGet("{id}")]
     public async Task<ActionResult<AppointmentDto>> GetAppointment(int id)
     {
         var result = await _appointmentService.GetAppointmentByIdAsync(id);
         if (!result.Success)
-        {
             return NotFound(result);
-        }
         return Ok(result.Data);
     }
 
-    /// <summary>
-    /// Get appointments for a specific patient
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.AppointmentsRead)]
     [HttpGet("patient/{patientId}")]
     public async Task<ActionResult<PagedResponse<AppointmentDto>>> GetPatientAppointments(
         int patientId,
@@ -58,9 +47,7 @@ public class AppointmentsController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get doctor's daily schedule
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.AppointmentsRead)]
     [HttpGet("doctor/{doctorId}/schedule")]
     public async Task<ActionResult<DoctorScheduleDto>> GetDoctorSchedule(
         int doctorId,
@@ -68,30 +55,22 @@ public class AppointmentsController : ControllerBase
     {
         var result = await _appointmentService.GetDoctorScheduleAsync(doctorId, date);
         if (!result.Success)
-        {
             return NotFound(result);
-        }
         return Ok(result.Data);
     }
 
-    /// <summary>
-    /// Create new appointment
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.AppointmentsWrite)]
     [HttpPost]
     public async Task<ActionResult<AppointmentDto>> CreateAppointment([FromBody] CreateAppointmentDto dto)
     {
         var createdBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
         var result = await _appointmentService.CreateAppointmentAsync(dto, createdBy);
         if (!result.Success)
-        {
             return BadRequest(result);
-        }
         return CreatedAtAction(nameof(GetAppointment), new { id = result.Data!.Id }, result.Data);
     }
 
-    /// <summary>
-    /// Reschedule appointment
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.AppointmentsWrite)]
     [HttpPut("{id}/reschedule")]
     public async Task<ActionResult<AppointmentDto>> RescheduleAppointment(
         int id,
@@ -100,15 +79,11 @@ public class AppointmentsController : ControllerBase
         var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
         var result = await _appointmentService.RescheduleAppointmentAsync(id, dto, updatedBy);
         if (!result.Success)
-        {
             return BadRequest(result);
-        }
         return Ok(result.Data);
     }
 
-    /// <summary>
-    /// Update appointment status
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.AppointmentsWrite)]
     [HttpPut("{id}/status")]
     public async Task<ActionResult<AppointmentDto>> UpdateAppointmentStatus(
         int id,
@@ -117,24 +92,18 @@ public class AppointmentsController : ControllerBase
         var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
         var result = await _appointmentService.UpdateAppointmentStatusAsync(id, dto, updatedBy);
         if (!result.Success)
-        {
             return BadRequest(result);
-        }
         return Ok(result.Data);
     }
 
-    /// <summary>
-    /// Cancel appointment
-    /// </summary>
+    [Authorize(Policy = PermissionCodes.AppointmentsWrite)]
     [HttpPut("{id}/cancel")]
     public async Task<ActionResult> CancelAppointment(int id)
     {
         var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
         var result = await _appointmentService.CancelAppointmentAsync(id, updatedBy);
         if (!result.Success)
-        {
             return NotFound(result);
-        }
         return Ok(result);
     }
 }

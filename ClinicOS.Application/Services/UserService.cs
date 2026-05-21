@@ -2,7 +2,6 @@ using ClinicOS.Application.Common;
 using ClinicOS.Application.DTOs;
 using ClinicOS.Application.Interfaces;
 using ClinicOS.Domain.Entities;
-using ClinicOS.Domain.Enums;
 using FluentValidation;
 
 namespace ClinicOS.Application.Services;
@@ -11,6 +10,7 @@ public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
     private readonly IClinicRepository _clinicRepository;
+    private readonly IRbacRepository _rbacRepository;
     private readonly ITenantContext _tenantContext;
     private readonly IValidator<CreateUserDto> _createValidator;
     private readonly IValidator<UpdateUserDto> _updateValidator;
@@ -21,6 +21,7 @@ public class UserService : IUserService
     public UserService(
         IUserRepository userRepository,
         IClinicRepository clinicRepository,
+        IRbacRepository rbacRepository,
         ITenantContext tenantContext,
         IValidator<CreateUserDto> createValidator,
         IValidator<UpdateUserDto> updateValidator,
@@ -30,6 +31,7 @@ public class UserService : IUserService
     {
         _userRepository = userRepository;
         _clinicRepository = clinicRepository;
+        _rbacRepository = rbacRepository;
         _tenantContext = tenantContext;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
@@ -39,17 +41,21 @@ public class UserService : IUserService
     }
 
     public async Task<ApiResponse<UserDto>> CreateUserAsync(
-        CreateUserDto dto, string createdBy, int? callerClinicId, UserRole callerRole)
+        CreateUserDto dto, string createdBy, int? callerClinicId)
     {
         var validation = await _createValidator.ValidateAsync(dto);
         if (!validation.IsValid)
             return ApiResponse<UserDto>.ErrorResponse("Validation failed",
                 validation.Errors.Select(e => e.ErrorMessage).ToList());
 
-        if (dto.Role == UserRole.SuperAdmin)
-            return ApiResponse<UserDto>.ErrorResponse("Cannot create SuperAdmin via this endpoint");
+        var role = await _rbacRepository.GetRoleByIdAsync(dto.RoleId);
+        if (role == null)
+            return ApiResponse<UserDto>.ErrorResponse("Invalid role");
 
-        var clinicId = ResolveTargetClinicId(dto.ClinicId, callerClinicId, callerRole);
+        if (role.IsPlatformRole)
+            return ApiResponse<UserDto>.ErrorResponse("Cannot assign platform roles via this endpoint");
+
+        var clinicId = ResolveTargetClinicId(dto.ClinicId, callerClinicId);
         if (!clinicId.HasValue)
             return ApiResponse<UserDto>.ErrorResponse("Clinic context is required to create a user");
 
@@ -67,13 +73,14 @@ public class UserService : IUserService
             FullName = dto.FullName,
             Email = dto.Email,
             PhoneNumber = dto.PhoneNumber,
-            Role = dto.Role,
             IsActive = true,
             CreatedBy = createdBy
         };
 
         await _userRepository.AddAsync(user);
         await _unitOfWork.SaveChangesAsync();
+
+        await _rbacRepository.AssignRoleToUserAsync(user.Id, role.Id);
 
         var loaded = await _userRepository.GetByIdAsync(user.Id);
         return ApiResponse<UserDto>.SuccessResponse(MapToUserDto(loaded!), "User created successfully");
@@ -90,11 +97,15 @@ public class UserService : IUserService
         if (user == null)
             return ApiResponse<UserDto>.ErrorResponse("User not found");
 
-        if (user.Role == UserRole.SuperAdmin)
+        if (await _rbacRepository.UserHasRoleAsync(id, RoleNames.SuperAdmin))
             return ApiResponse<UserDto>.ErrorResponse("Cannot modify SuperAdmin account");
 
-        if (dto.Role == UserRole.SuperAdmin)
-            return ApiResponse<UserDto>.ErrorResponse("Cannot assign SuperAdmin role");
+        var role = await _rbacRepository.GetRoleByIdAsync(dto.RoleId);
+        if (role == null)
+            return ApiResponse<UserDto>.ErrorResponse("Invalid role");
+
+        if (role.IsPlatformRole)
+            return ApiResponse<UserDto>.ErrorResponse("Cannot assign platform roles");
 
         if (user.Email != dto.Email && await _userRepository.EmailExistsAsync(dto.Email, user.ClinicId))
             return ApiResponse<UserDto>.ErrorResponse("Email already exists in this clinic");
@@ -102,14 +113,16 @@ public class UserService : IUserService
         user.FullName = dto.FullName;
         user.Email = dto.Email;
         user.PhoneNumber = dto.PhoneNumber;
-        user.Role = dto.Role;
         user.IsActive = dto.IsActive;
         user.UpdatedBy = updatedBy;
 
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
 
-        return ApiResponse<UserDto>.SuccessResponse(MapToUserDto(user), "User updated successfully");
+        await _rbacRepository.ReplaceUserRoleAsync(id, role.Id);
+
+        var loaded = await _userRepository.GetByIdAsync(id);
+        return ApiResponse<UserDto>.SuccessResponse(MapToUserDto(loaded!), "User updated successfully");
     }
 
     public async Task<ApiResponse> DeactivateUserAsync(int id, string deactivatedBy)
@@ -118,7 +131,7 @@ public class UserService : IUserService
         if (user == null)
             return ApiResponse.ErrorResponse("User not found");
 
-        if (user.Role == UserRole.SuperAdmin)
+        if (await _rbacRepository.UserHasRoleAsync(id, RoleNames.SuperAdmin))
             return ApiResponse.ErrorResponse("Cannot deactivate SuperAdmin account");
 
         if (await _userRepository.HasAppointmentsAsync(id))
@@ -216,25 +229,31 @@ public class UserService : IUserService
         return PagedResponse<UserDto>.Create(users.Select(MapToUserDto).ToList(), query.PageNumber, query.PageSize, total);
     }
 
-    private int? ResolveTargetClinicId(int? dtoClinicId, int? callerClinicId, UserRole callerRole)
+    private int? ResolveTargetClinicId(int? dtoClinicId, int? callerClinicId)
     {
-        if (callerRole == UserRole.SuperAdmin)
+        if (_tenantContext.IsSuperAdmin)
             return dtoClinicId ?? _tenantContext.ClinicId;
 
         return callerClinicId ?? _tenantContext.ClinicId;
     }
 
-    private static UserDto MapToUserDto(User user) => new()
+    private static UserDto MapToUserDto(User user)
     {
-        Id = user.Id,
-        ClinicId = user.ClinicId,
-        ClinicName = user.Clinic?.Name,
-        Username = user.Username,
-        FullName = user.FullName,
-        Email = user.Email,
-        PhoneNumber = user.PhoneNumber,
-        Role = user.Role,
-        IsActive = user.IsActive,
-        CreatedAt = user.CreatedAt
-    };
+        var primaryRole = user.UserRoleAssignments.FirstOrDefault()?.Role;
+        return new UserDto
+        {
+            Id = user.Id,
+            ClinicId = user.ClinicId,
+            ClinicName = user.Clinic?.Name,
+            Username = user.Username,
+            FullName = user.FullName,
+            Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            RoleId = primaryRole?.Id ?? 0,
+            RoleName = primaryRole?.Name ?? string.Empty,
+            Permissions = UserAuthHelper.GetPermissionCodes(user),
+            IsActive = user.IsActive,
+            CreatedAt = user.CreatedAt
+        };
+    }
 }

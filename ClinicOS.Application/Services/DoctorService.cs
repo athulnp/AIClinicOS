@@ -88,7 +88,8 @@ public class DoctorService : IDoctorService
             throw new InvalidOperationException($"User with ID {dto.UserId} not found");
         }
 
-        if (user.Role != UserRole.Doctor)
+        if (!user.UserRoleAssignments.Any(a =>
+                string.Equals(a.Role.Name, RoleNames.Doctor, StringComparison.OrdinalIgnoreCase)))
         {
             throw new InvalidOperationException("User must have Doctor role");
         }

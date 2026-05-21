@@ -18,7 +18,7 @@ public class ClinicsController : ControllerBase
         _clinicService = clinicService;
     }
 
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Policy = PermissionCodes.ClinicsWrite)]
     [HttpPost]
     public async Task<ActionResult<ClinicDto>> CreateClinic([FromBody] CreateClinicDto dto)
     {
@@ -29,7 +29,7 @@ public class ClinicsController : ControllerBase
         return CreatedAtAction(nameof(GetClinic), new { id = result.Data!.Id }, result.Data);
     }
 
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Policy = PermissionCodes.ClinicsRead)]
     [HttpGet]
     public async Task<ActionResult<PagedResponse<ClinicDto>>> GetClinics(
         [FromQuery] PaginationRequest pagination,
@@ -38,7 +38,7 @@ public class ClinicsController : ControllerBase
         return Ok(await _clinicService.GetAllClinicsAsync(pagination, isActive));
     }
 
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Policy = PermissionCodes.ClinicsRead)]
     [HttpGet("{id}")]
     public async Task<ActionResult<ClinicDto>> GetClinic(int id)
     {
@@ -58,7 +58,7 @@ public class ClinicsController : ControllerBase
         return Ok(result.Data);
     }
 
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Policy = PermissionCodes.ClinicsWrite)]
     [HttpPut("{id}")]
     public async Task<ActionResult<ClinicDto>> UpdateClinic(int id, [FromBody] UpdateClinicDto dto)
     {

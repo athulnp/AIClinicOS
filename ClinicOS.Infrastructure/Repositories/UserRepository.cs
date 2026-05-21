@@ -1,7 +1,6 @@
 using ClinicOS.Application.DTOs;
 using ClinicOS.Application.Interfaces;
 using ClinicOS.Domain.Entities;
-using ClinicOS.Domain.Enums;
 using ClinicOS.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,30 +12,28 @@ public class UserRepository : Repository<User>, IUserRepository
     {
     }
 
+    private static IQueryable<User> WithAuthDetails(IQueryable<User> query) =>
+        query
+            .Include(u => u.Clinic)
+            .Include(u => u.UserRoleAssignments)
+                .ThenInclude(ura => ura.Role)
+                    .ThenInclude(r => r.RolePermissions)
+                        .ThenInclude(rp => rp.Permission);
+
     public override async Task<User?> GetByIdAsync(int id) =>
-        await _dbSet.Include(u => u.Clinic).FirstOrDefaultAsync(u => u.Id == id);
+        await WithAuthDetails(_dbSet).FirstOrDefaultAsync(u => u.Id == id);
 
-    public async Task<User?> GetByUsernameAsync(string username, int? clinicId)
-    {
-        return await _dbSet.FirstOrDefaultAsync(u =>
+    public async Task<User?> GetByUsernameAsync(string username, int? clinicId) =>
+        await WithAuthDetails(_dbSet).FirstOrDefaultAsync(u =>
             u.Username == username && u.ClinicId == clinicId);
-    }
 
-    public async Task<User?> GetByEmailAsync(string email, int? clinicId)
-    {
-        return await _dbSet.FirstOrDefaultAsync(u =>
+    public async Task<User?> GetByEmailAsync(string email, int? clinicId) =>
+        await _dbSet.FirstOrDefaultAsync(u =>
             u.Email == email && u.ClinicId == clinicId);
-    }
 
-    public async Task<User?> GetByRefreshTokenAsync(string refreshToken)
-    {
-        return await _dbSet.FirstOrDefaultAsync(u =>
+    public async Task<User?> GetByRefreshTokenAsync(string refreshToken) =>
+        await WithAuthDetails(_dbSet).FirstOrDefaultAsync(u =>
             u.RefreshToken == refreshToken && u.RefreshTokenExpiryTime > DateTime.UtcNow);
-    }
-
-    public async Task<IEnumerable<User>> GetByRoleAsync(UserRole role, int clinicId) =>
-        await _dbSet.Where(u => u.Role == role && u.ClinicId == clinicId)
-            .OrderBy(u => u.FullName).ToListAsync();
 
     public async Task<bool> UsernameExistsAsync(string username, int? clinicId) =>
         await _dbSet.AnyAsync(u => u.Username == username && u.ClinicId == clinicId);
@@ -55,6 +52,8 @@ public class UserRepository : Repository<User>, IUserRepository
         var q = BuildListQuery(clinicId, query);
         return await q
             .Include(u => u.Clinic)
+            .Include(u => u.UserRoleAssignments)
+                .ThenInclude(ura => ura.Role)
             .OrderBy(u => u.FullName)
             .Skip((query.PageNumber - 1) * query.PageSize)
             .Take(query.PageSize)
@@ -68,8 +67,8 @@ public class UserRepository : Repository<User>, IUserRepository
     {
         var q = _dbSet.Where(u => u.ClinicId == clinicId);
 
-        if (query.Role.HasValue)
-            q = q.Where(u => u.Role == query.Role.Value);
+        if (query.RoleId.HasValue)
+            q = q.Where(u => u.UserRoleAssignments.Any(ura => ura.RoleId == query.RoleId.Value));
 
         if (query.IsActive.HasValue)
             q = q.Where(u => u.IsActive == query.IsActive.Value);

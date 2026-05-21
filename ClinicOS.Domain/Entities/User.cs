@@ -1,5 +1,4 @@
 using ClinicOS.Domain.Common;
-using ClinicOS.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace ClinicOS.Domain.Entities;
@@ -34,15 +33,14 @@ public class User : AuditableEntity
     [Phone]
     public string PhoneNumber { get; set; } = string.Empty;
 
-    [Required]
-    public UserRole Role { get; set; }
-
     public bool IsActive { get; set; } = true;
 
     [MaxLength(500)]
     public string? RefreshToken { get; set; }
 
     public DateTime? RefreshTokenExpiryTime { get; set; }
+
+    public virtual ICollection<UserRoleAssignment> UserRoleAssignments { get; set; } = new List<UserRoleAssignment>();
 
     // Navigation properties
     public virtual Clinic? Clinic { get; set; }

@@ -1,7 +1,6 @@
 using ClinicOS.Application.Common;
 using ClinicOS.Application.DTOs;
 using ClinicOS.Application.Interfaces;
-using ClinicOS.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -22,7 +21,7 @@ public class UsersController : ControllerBase
         _tenantContext = tenantContext;
     }
 
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = PermissionCodes.UsersRead)]
     [HttpGet]
     public async Task<ActionResult<PagedResponse<UserDto>>> GetUsers([FromQuery] UserListQueryDto query)
     {
@@ -32,7 +31,7 @@ public class UsersController : ControllerBase
         return Ok(await _userService.GetUsersAsync(query));
     }
 
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = PermissionCodes.UsersRead)]
     [HttpGet("{id}")]
     public async Task<ActionResult<UserDto>> GetUser(int id)
     {
@@ -42,21 +41,20 @@ public class UsersController : ControllerBase
         return Ok(result.Data);
     }
 
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = PermissionCodes.UsersManage)]
     [HttpPost]
     public async Task<ActionResult<UserDto>> CreateUser([FromBody] CreateUserDto dto)
     {
         var createdBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var role = Enum.Parse<UserRole>(User.FindFirst(ClaimTypes.Role)?.Value ?? "Admin");
         int? clinicId = int.TryParse(User.FindFirst(TenantConstants.ClinicIdClaim)?.Value, out var cid) ? cid : null;
 
-        var result = await _userService.CreateUserAsync(dto, createdBy, clinicId, role);
+        var result = await _userService.CreateUserAsync(dto, createdBy, clinicId);
         if (!result.Success)
             return BadRequest(result);
         return CreatedAtAction(nameof(GetUser), new { id = result.Data!.Id }, result.Data);
     }
 
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = PermissionCodes.UsersManage)]
     [HttpPut("{id}")]
     public async Task<ActionResult<UserDto>> UpdateUser(int id, [FromBody] UpdateUserDto dto)
     {
@@ -67,7 +65,7 @@ public class UsersController : ControllerBase
         return Ok(result.Data);
     }
 
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = PermissionCodes.UsersManage)]
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeactivateUser(int id)
     {
