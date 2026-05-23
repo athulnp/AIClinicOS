@@ -13,6 +13,7 @@ namespace ClinicOS.Application.Services;
 public class PatientService : IPatientService
 {
     private readonly IPatientRepository _patientRepository;
+    private readonly IClinicRepository _clinicRepository;
     private readonly IValidator<CreatePatientDto> _createValidator;
     private readonly IValidator<UpdatePatientDto> _updateValidator;
     private readonly IMapper _mapper;
@@ -20,19 +21,21 @@ public class PatientService : IPatientService
 
     public PatientService(
         IPatientRepository patientRepository,
+        IClinicRepository clinicRepository,
         IValidator<CreatePatientDto> createValidator,
         IValidator<UpdatePatientDto> updateValidator,
         IMapper mapper,
         IUnitOfWork unitOfWork)
     {
         _patientRepository = patientRepository;
+        _clinicRepository = clinicRepository;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
         _mapper = mapper;
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<ApiResponse<PatientDto>> CreatePatientAsync(CreatePatientDto dto, string createdBy)
+    public async Task<ApiResponse<PatientDto>> CreatePatientAsync(CreatePatientDto dto, string createdBy, int clinicId)
     {
         var validationResult = await _createValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
@@ -40,14 +43,20 @@ public class PatientService : IPatientService
             return ApiResponse<PatientDto>.ErrorResponse("Validation failed", validationResult.Errors.Select(e => e.ErrorMessage).ToList());
         }
 
-        // Check if patient code already exists
-        var existingPatient = await _patientRepository.GetByPatientCodeAsync(dto.PatientCode);
-        if (existingPatient != null)
+        // Get clinic information
+        var clinic = await _clinicRepository.GetByIdAsync(clinicId);
+        if (clinic == null)
         {
-            return ApiResponse<PatientDto>.ErrorResponse("Patient code already exists");
+            return ApiResponse<PatientDto>.ErrorResponse("Clinic not found");
         }
 
+        // Generate PatientCode in format P-CLINICCODE-XXX (e.g., P-DEMO-001)
+        var nextNumber = await _patientRepository.GetNextPatientNumberAsync(clinicId);
+        var patientCode = $"P-{clinic.Code.ToUpper()}-{nextNumber:D3}";
+
         var patient = _mapper.Map<Patient>(dto);
+        patient.PatientCode = patientCode;
+        patient.ClinicId = clinicId;
         patient.CreatedBy = createdBy;
 
         await _patientRepository.AddAsync(patient);

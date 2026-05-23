@@ -8,9 +8,8 @@ namespace ClinicOS.Application.DTOs;
 /// </summary>
 public class CreatePatientDto
 {
-    [Required(ErrorMessage = "Patient code is required")]
-    [MaxLength(50)]
-    public string PatientCode { get; set; } = string.Empty;
+    // PatientCode is auto-generated on the server (P-CLINICCODE-XXX)
+    // No need to send it from the client
 
     [Required(ErrorMessage = "Full name is required")]
     [MaxLength(200)]

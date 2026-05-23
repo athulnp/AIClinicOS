@@ -62,7 +62,20 @@ public class PatientsController : ControllerBase
     public async Task<ActionResult<PatientDto>> CreatePatient([FromBody] CreatePatientDto dto)
     {
         var createdBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _patientService.CreatePatientAsync(dto, createdBy);
+        
+        // Get clinic ID from claims or header
+        var clinicIdClaim = User.FindFirst("clinic_id")?.Value;
+        if (string.IsNullOrEmpty(clinicIdClaim))
+        {
+            return BadRequest("Clinic context not found");
+        }
+        
+        if (!int.TryParse(clinicIdClaim, out int clinicId))
+        {
+            return BadRequest("Invalid clinic context");
+        }
+
+        var result = await _patientService.CreatePatientAsync(dto, createdBy, clinicId);
         if (!result.Success)
             return BadRequest(result);
         return CreatedAtAction(nameof(GetPatient), new { id = result.Data!.Id }, result.Data);

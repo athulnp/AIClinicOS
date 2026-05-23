@@ -10,9 +10,7 @@ public class CreatePatientValidator : AbstractValidator<CreatePatientDto>
 {
     public CreatePatientValidator()
     {
-        RuleFor(x => x.PatientCode)
-            .NotEmpty().WithMessage("Patient code is required")
-            .MaximumLength(50).WithMessage("Patient code cannot exceed 50 characters");
+        // PatientCode is auto-generated on the server, no validation needed
 
         RuleFor(x => x.FullName)
             .NotEmpty().WithMessage("Full name is required")

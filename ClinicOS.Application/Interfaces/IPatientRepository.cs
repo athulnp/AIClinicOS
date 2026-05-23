@@ -13,4 +13,5 @@ public interface IPatientRepository : ISoftDeleteRepository<Patient>
     Task<IEnumerable<Patient>> SearchByPhoneAsync(string phone);
     Task<IEnumerable<Patient>> GetPagedAsync(PaginationRequest pagination);
     Task<int> GetTotalCountAsync();
+    Task<int> GetNextPatientNumberAsync(int clinicId);
 }

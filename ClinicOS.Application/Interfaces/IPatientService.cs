@@ -8,7 +8,7 @@ namespace ClinicOS.Application.Interfaces;
 /// </summary>
 public interface IPatientService
 {
-    Task<ApiResponse<PatientDto>> CreatePatientAsync(CreatePatientDto dto, string createdBy);
+    Task<ApiResponse<PatientDto>> CreatePatientAsync(CreatePatientDto dto, string createdBy, int clinicId);
     Task<ApiResponse<PatientDto>> UpdatePatientAsync(int id, UpdatePatientDto dto, string updatedBy);
     Task<ApiResponse> DeletePatientAsync(int id, string deletedBy);
     Task<ApiResponse<PatientDto>> GetPatientByIdAsync(int id);

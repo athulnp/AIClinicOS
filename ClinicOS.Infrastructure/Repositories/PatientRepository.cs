@@ -47,4 +47,28 @@ public class PatientRepository : SoftDeleteRepository<Patient>, IPatientReposito
     {
         return await _dbSet.CountAsync();
     }
+
+    public async Task<int> GetNextPatientNumberAsync(int clinicId)
+    {
+        // Get the highest patient number for this clinic
+        // Patient codes are in format P-CLINICCODE-XXX (e.g., P-DEMO-001)
+        var patients = await _dbSet
+            .Where(p => p.ClinicId == clinicId && p.PatientCode.StartsWith("P-"))
+            .ToListAsync();
+
+        if (!patients.Any())
+        {
+            return 1;
+        }
+
+        // Extract the numeric part from the last patient code
+        var lastPatient = patients.OrderByDescending(p => p.CreatedAt).First();
+        var parts = lastPatient.PatientCode.Split('-');
+        if (parts.Length == 3 && int.TryParse(parts[2], out int lastNumber))
+        {
+            return lastNumber + 1;
+        }
+
+        return 1;
+    }
 }
