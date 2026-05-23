@@ -11,8 +11,11 @@ namespace ClinicOS.Infrastructure.Repositories;
 /// </summary>
 public class PatientRepository : SoftDeleteRepository<Patient>, IPatientRepository
 {
-    public PatientRepository(AppDbContext context) : base(context)
+    private readonly ITenantContext _tenantContext;
+
+    public PatientRepository(AppDbContext context, ITenantContext tenantContext) : base(context)
     {
+        _tenantContext = tenantContext;
     }
 
     public async Task<Patient?> GetByPatientCodeAsync(string patientCode)
@@ -34,12 +37,20 @@ public class PatientRepository : SoftDeleteRepository<Patient>, IPatientReposito
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<Patient>> GetPagedAsync(PaginationRequest pagination)
+    public async Task<IEnumerable<Patient>> GetPagedAsync(PaginationRequest pagination, int? clinicId = null)
     {
-        return await _dbSet
+        IQueryable<Patient> query = _dbSet;
+
+        // Explicitly filter by clinic from TenantContext
+        if (_tenantContext.HasClinic)
+        {
+            query = query.Where(p => p.ClinicId == _tenantContext.ClinicId);
+        }
+
+        return await query
+            .OrderByDescending(p => p.CreatedAt)
             .Skip((pagination.PageNumber - 1) * pagination.PageSize)
             .Take(pagination.PageSize)
-            .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
     }
 

@@ -3,6 +3,7 @@ using ClinicOS.Application.DTOs;
 using ClinicOS.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ClinicOS.API.Controllers;
 
@@ -131,7 +132,30 @@ public class DoctorsController : ControllerBase
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var doctor = await _doctorService.CreateDoctorAsync(dto);
+            int? clinicId;
+            var isSuperAdmin = User.IsInRole(RoleNames.SuperAdmin);
+            
+            if (isSuperAdmin)
+            {
+                // Super admins must provide clinicId in the request body
+                if (!dto.ClinicId.HasValue)
+                {
+                    return BadRequest("ClinicId is required for super admins");
+                }
+                clinicId = dto.ClinicId.Value;
+            }
+            else
+            {
+                // Regular staff use clinic_id from claims or header
+                var clinicIdClaim = User.FindFirst("clinic_id")?.Value;
+                if (string.IsNullOrEmpty(clinicIdClaim))
+                {
+                    return BadRequest("Clinic context not found");
+                }
+                clinicId = int.TryParse(clinicIdClaim, out var cid) ? cid : null;
+            }
+
+            var doctor = await _doctorService.CreateDoctorAsync(dto, clinicId);
             return CreatedAtAction(nameof(GetDoctorById), new { id = doctor.Id }, doctor);
         }
         catch (InvalidOperationException ex)

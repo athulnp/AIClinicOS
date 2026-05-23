@@ -108,8 +108,10 @@ public class AppDbContext : DbContext
             .HasForeignKey(r => r.ClinicId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Appointment>().HasQueryFilter(a =>
-            !_tenantContext.HasClinic || a.ClinicId == _tenantContext.ClinicId);
+        // DISABLED: Global query filter using different ITenantContext instance
+// Using explicit repository filtering instead
+// modelBuilder.Entity<Appointment>().HasQueryFilter(a =>
+//     !_tenantContext.HasClinic || a.ClinicId == _tenantContext.ClinicId);
 
         modelBuilder.Entity<Appointment>()
             .HasIndex(a => new { a.ClinicId, a.DoctorId, a.AppointmentDate, a.StartTime });

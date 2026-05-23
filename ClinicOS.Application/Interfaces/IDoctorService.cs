@@ -13,7 +13,7 @@ public interface IDoctorService
     Task<IEnumerable<DoctorResponseDto>> GetAllDoctorsAsync();
     Task<IEnumerable<DoctorResponseDto>> GetDoctorsBySpecializationAsync(string specialization);
     Task<IEnumerable<DoctorResponseDto>> GetAvailableDoctorsAsync();
-    Task<DoctorResponseDto> CreateDoctorAsync(CreateDoctorDto dto);
+    Task<DoctorResponseDto> CreateDoctorAsync(CreateDoctorDto dto, int? clinicId = null);
     Task<DoctorResponseDto> UpdateDoctorAsync(int id, UpdateDoctorDto dto);
     Task<bool> DeleteDoctorAsync(int id);
 }

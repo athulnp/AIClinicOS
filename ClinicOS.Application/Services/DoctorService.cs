@@ -72,7 +72,7 @@ public class DoctorService : IDoctorService
         return _mapper.Map<IEnumerable<DoctorResponseDto>>(doctors);
     }
 
-    public async Task<DoctorResponseDto> CreateDoctorAsync(CreateDoctorDto dto)
+    public async Task<DoctorResponseDto> CreateDoctorAsync(CreateDoctorDto dto, int? clinicId = null)
     {
         var validationResult = await _createValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
@@ -108,7 +108,8 @@ public class DoctorService : IDoctorService
         }
 
         var doctor = _mapper.Map<Doctor>(dto);
-        doctor.ClinicId = user.ClinicId!.Value;
+        // Use clinicId from parameter if provided (for super admins), otherwise use user's clinic
+        doctor.ClinicId = clinicId ?? user.ClinicId!.Value;
         await _doctorRepository.CreateAsync(doctor);
         await _unitOfWork.SaveChangesAsync();
 

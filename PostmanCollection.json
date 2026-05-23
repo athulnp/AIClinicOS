@@ -131,6 +131,26 @@
       ]
     },
     {
+      "name": "Roles",
+      "item": [
+        {
+          "name": "Get Assignable Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Clinics",
       "item": [
         {
@@ -172,6 +192,19 @@
           "response": []
         },
         {
+          "name": "Get Clinic By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/clinics/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["clinics", "1"]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get Clinic By Code",
           "request": {
             "method": "GET",
@@ -180,6 +213,40 @@
               "raw": "{{baseUrl}}/clinics/code/{{clinicCode}}",
               "host": ["{{baseUrl}}"],
               "path": ["clinics", "code", "{{clinicCode}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Clinic",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sunshine Dental Updated\",\n  \"city\": \"Mumbai\",\n  \"country\": \"India\",\n  \"address\": \"123 Main Street\",\n  \"phoneNumber\": \"+911234567890\",\n  \"email\": \"info@sunshinedental.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clinics/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["clinics", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Clinic",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/clinics/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["clinics", "1"]
             }
           },
           "response": []
@@ -210,6 +277,21 @@
           "response": []
         },
         {
+          "name": "Get User By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "1"]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Create User",
           "request": {
             "method": "POST",
@@ -220,13 +302,49 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"reception2\",\n  \"password\": \"Reception@123\",\n  \"fullName\": \"New Receptionist\",\n  \"email\": \"reception2@demodental.com\",\n  \"phoneNumber\": \"+911234567899\",\n  \"role\": 3\n}",
+              "raw": "{\n  \"username\": \"reception2\",\n  \"password\": \"Reception@123\",\n  \"fullName\": \"New Receptionist\",\n  \"email\": \"reception2@demodental.com\",\n  \"phoneNumber\": \"+911234567899\",\n  \"roleId\": 3\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{baseUrl}}/users",
               "host": ["{{baseUrl}}"],
               "path": ["users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Updated Receptionist Name\",\n  \"email\": \"reception2@demodental.com\",\n  \"phoneNumber\": \"+911234567899\",\n  \"roleId\": 3\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "1"]
             }
           },
           "response": []
@@ -357,6 +475,24 @@
           "response": []
         },
         {
+          "name": "Get Patient by Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/patients/code/P-DEMO-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["patients", "code", "P-DEMO-001"]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Create Patient",
           "request": {
             "method": "POST",
@@ -368,7 +504,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"patientCode\": \"P003\",\n  \"fullName\": \"John Doe\",\n  \"gender\": 1,\n  \"dateOfBirth\": \"1990-01-15T00:00:00Z\",\n  \"phoneNumber\": \"+1234567890\",\n  \"email\": \"john.doe@email.com\",\n  \"address\": \"123 Main St\",\n  \"bloodGroup\": \"O+\",\n  \"medicalHistory\": \"None\",\n  \"allergies\": \"None\",\n  \"emergencyContact\": \"+1234567891\"\n}",
+              "raw": "{\n  \"fullName\": \"John Doe\",\n  \"gender\": 1,\n  \"dateOfBirth\": \"1990-01-15\",\n  \"phoneNumber\": \"+1234567890\",\n  \"email\": \"john.doe@email.com\",\n  \"address\": \"123 Main St\",\n  \"bloodGroup\": \"O+\",\n  \"medicalHistory\": \"None\",\n  \"allergies\": \"None\",\n  \"emergencyContact\": \"+1234567891\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -395,7 +531,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"John Doe Updated\",\n  \"gender\": 1,\n  \"dateOfBirth\": \"1990-01-15T00:00:00Z\",\n  \"phoneNumber\": \"+1234567890\",\n  \"email\": \"john.doe.updated@email.com\"\n}",
+              "raw": "{\n  \"fullName\": \"John Doe Updated\",\n  \"gender\": 1,\n  \"dateOfBirth\": \"1990-01-15\",\n  \"phoneNumber\": \"+1234567890\",\n  \"email\": \"john.doe.updated@email.com\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -447,6 +583,52 @@
               "raw": "{{baseUrl}}/appointments?pageNumber=1&pageSize=10",
               "host": ["{{baseUrl}}"],
               "path": ["appointments"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Appointment by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["appointments", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Patient Appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/appointments/patient/1?pageNumber=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["appointments", "patient", "1"],
               "query": [
                 {
                   "key": "pageNumber",
@@ -618,6 +800,70 @@
           "response": []
         },
         {
+          "name": "Get Billing by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/billing/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["billing", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Billing by Invoice Number",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/billing/invoice/INV-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["billing", "invoice", "INV-001"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Patient Billing History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/billing/patient/1?pageNumber=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["billing", "patient", "1"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Create Billing",
           "request": {
             "method": "POST",
@@ -645,6 +891,33 @@
           "response": []
         },
         {
+          "name": "Update Billing",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": 1,\n  \"totalAmount\": 200.00,\n  \"paymentMethod\": 1,\n  \"notes\": \"Updated consultation fee\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/billing/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["billing", "1"]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Record Payment",
           "request": {
             "method": "POST",
@@ -667,6 +940,24 @@
               "raw": "{{baseUrl}}/billing/1/payment",
               "host": ["{{baseUrl}}"],
               "path": ["billing", "1", "payment"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Billing",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/billing/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["billing", "1"]
             }
           },
           "response": []
@@ -736,6 +1027,24 @@
               "raw": "{{baseUrl}}/reminders/send-appointment-reminders",
               "host": ["{{baseUrl}}"],
               "path": ["reminders", "send-appointment-reminders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Follow-up Reminders (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reminders/send-follow-up-reminders",
+              "host": ["{{baseUrl}}"],
+              "path": ["reminders", "send-follow-up-reminders"]
             }
           },
           "response": []

@@ -12,6 +12,6 @@ public interface IBillingRepository : IRepository<Billing>
     Task<IEnumerable<Billing>> GetByPatientIdAsync(int patientId);
     Task<IEnumerable<Billing>> GetByAppointmentIdAsync(int appointmentId);
     Task<IEnumerable<Billing>> GetOutstandingBalancesAsync();
-    Task<IEnumerable<Billing>> GetPagedAsync(PaginationRequest pagination);
+    Task<IEnumerable<Billing>> GetPagedAsync(PaginationRequest pagination, int? clinicId = null);
     Task<decimal> GetTotalOutstandingForPatientAsync(int patientId);
 }

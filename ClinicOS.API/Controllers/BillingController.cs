@@ -23,6 +23,7 @@ public class BillingController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedResponse<BillingDto>>> GetAllBillings([FromQuery] PaginationRequest pagination)
     {
+        // Note: TenantMiddleware sets clinic_id from JWT claims, and global query filter handles filtering
         var result = await _billingService.GetAllBillingsAsync(pagination);
         return Ok(result);
     }
@@ -71,7 +72,31 @@ public class BillingController : ControllerBase
     public async Task<ActionResult<BillingDto>> CreateBilling([FromBody] CreateBillingDto dto)
     {
         var createdBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _billingService.CreateBillingAsync(dto, createdBy);
+        
+        int? clinicId;
+        var isSuperAdmin = User.IsInRole(RoleNames.SuperAdmin);
+        
+        if (isSuperAdmin)
+        {
+            // Super admins must provide clinicId in the request body
+            if (!dto.ClinicId.HasValue)
+            {
+                return BadRequest("ClinicId is required for super admins");
+            }
+            clinicId = dto.ClinicId.Value;
+        }
+        else
+        {
+            // Regular staff use clinic_id from claims or header
+            var clinicIdClaim = User.FindFirst("clinic_id")?.Value;
+            if (string.IsNullOrEmpty(clinicIdClaim))
+            {
+                return BadRequest("Clinic context not found");
+            }
+            clinicId = int.TryParse(clinicIdClaim, out var cid) ? cid : null;
+        }
+
+        var result = await _billingService.CreateBillingAsync(dto, createdBy, clinicId);
         if (!result.Success)
             return BadRequest(result);
         return CreatedAtAction(nameof(GetBilling), new { id = result.Data!.Id }, result.Data);

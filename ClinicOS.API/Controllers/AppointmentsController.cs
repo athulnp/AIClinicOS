@@ -13,16 +13,31 @@ namespace ClinicOS.API.Controllers;
 public class AppointmentsController : ControllerBase
 {
     private readonly IAppointmentService _appointmentService;
+    private readonly ITenantContext _tenantContext;
 
-    public AppointmentsController(IAppointmentService appointmentService)
+    public AppointmentsController(IAppointmentService appointmentService, ITenantContext tenantContext)
     {
         _appointmentService = appointmentService;
+        _tenantContext = tenantContext;
+    }
+
+    [HttpGet("debug")]
+    public IActionResult DebugTenantContext()
+    {
+        return Ok(new
+        {
+            HasClinic = _tenantContext.HasClinic,
+            ClinicId = _tenantContext.ClinicId,
+            ClinicCode = _tenantContext.ClinicCode,
+            IsSuperAdmin = _tenantContext.IsSuperAdmin
+        });
     }
 
     [Authorize(Policy = PermissionCodes.AppointmentsRead)]
     [HttpGet]
     public async Task<ActionResult<PagedResponse<AppointmentDto>>> GetAllAppointments([FromQuery] PaginationRequest pagination)
     {
+        // Note: TenantMiddleware sets clinic_id from JWT claims, and global query filter handles filtering
         var result = await _appointmentService.GetAllAppointmentsAsync(pagination);
         return Ok(result);
     }
@@ -64,7 +79,31 @@ public class AppointmentsController : ControllerBase
     public async Task<ActionResult<AppointmentDto>> CreateAppointment([FromBody] CreateAppointmentDto dto)
     {
         var createdBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _appointmentService.CreateAppointmentAsync(dto, createdBy);
+        
+        int? clinicId;
+        var isSuperAdmin = User.IsInRole(RoleNames.SuperAdmin);
+        
+        if (isSuperAdmin)
+        {
+            // Super admins must provide clinicId in the request body
+            if (!dto.ClinicId.HasValue)
+            {
+                return BadRequest("ClinicId is required for super admins");
+            }
+            clinicId = dto.ClinicId.Value;
+        }
+        else
+        {
+            // Regular staff use clinic_id from claims or header
+            var clinicIdClaim = User.FindFirst("clinic_id")?.Value;
+            if (string.IsNullOrEmpty(clinicIdClaim))
+            {
+                return BadRequest("Clinic context not found");
+            }
+            clinicId = int.TryParse(clinicIdClaim, out var cid) ? cid : null;
+        }
+
+        var result = await _appointmentService.CreateAppointmentAsync(dto, createdBy, clinicId);
         if (!result.Success)
             return BadRequest(result);
         return CreatedAtAction(nameof(GetAppointment), new { id = result.Data!.Id }, result.Data);

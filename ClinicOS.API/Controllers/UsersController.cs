@@ -46,7 +46,24 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<UserDto>> CreateUser([FromBody] CreateUserDto dto)
     {
         var createdBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        int? clinicId = int.TryParse(User.FindFirst(TenantConstants.ClinicIdClaim)?.Value, out var cid) ? cid : null;
+        
+        int? clinicId;
+        var isSuperAdmin = User.IsInRole(RoleNames.SuperAdmin);
+        
+        if (isSuperAdmin)
+        {
+            // Super admins must provide clinicId in the request body
+            if (!dto.ClinicId.HasValue)
+            {
+                return BadRequest("ClinicId is required for super admins");
+            }
+            clinicId = dto.ClinicId.Value;
+        }
+        else
+        {
+            // Regular staff use clinic_id from claims or header
+            clinicId = int.TryParse(User.FindFirst(TenantConstants.ClinicIdClaim)?.Value, out var cid) ? cid : null;
+        }
 
         var result = await _userService.CreateUserAsync(dto, createdBy, clinicId);
         if (!result.Success)

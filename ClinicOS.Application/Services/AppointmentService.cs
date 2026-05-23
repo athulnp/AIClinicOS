@@ -36,7 +36,7 @@ public class AppointmentService : IAppointmentService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<ApiResponse<AppointmentDto>> CreateAppointmentAsync(CreateAppointmentDto dto, string createdBy)
+    public async Task<ApiResponse<AppointmentDto>> CreateAppointmentAsync(CreateAppointmentDto dto, string createdBy, int? clinicId = null)
     {
         var validationResult = await _createValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
@@ -61,7 +61,8 @@ public class AppointmentService : IAppointmentService
         }
 
         var appointment = _mapper.Map<Appointment>(dto);
-        appointment.ClinicId = patient.ClinicId;
+        // Use clinicId from parameter if provided (for super admins), otherwise use patient's clinic
+        appointment.ClinicId = clinicId ?? patient.ClinicId;
         appointment.Status = AppointmentStatus.Scheduled;
         appointment.CreatedBy = createdBy;
 
@@ -180,9 +181,9 @@ public class AppointmentService : IAppointmentService
         return ApiResponse<DoctorScheduleDto>.SuccessResponse(schedule);
     }
 
-    public async Task<PagedResponse<AppointmentDto>> GetAllAppointmentsAsync(PaginationRequest pagination)
+    public async Task<PagedResponse<AppointmentDto>> GetAllAppointmentsAsync(PaginationRequest pagination, int? clinicId = null)
     {
-        var appointments = await _appointmentRepository.GetPagedAsync(pagination);
+        var appointments = await _appointmentRepository.GetPagedAsync(pagination, clinicId);
         var appointmentDtos = await Task.WhenAll(appointments.Select(MapToDto));
 
         return PagedResponse<AppointmentDto>.Create(appointmentDtos.ToList(), pagination.PageNumber, pagination.PageSize, appointments.Count());

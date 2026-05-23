@@ -11,8 +11,11 @@ namespace ClinicOS.Infrastructure.Repositories;
 /// </summary>
 public class BillingRepository : Repository<Billing>, IBillingRepository
 {
-    public BillingRepository(AppDbContext context) : base(context)
+    private readonly ITenantContext _tenantContext;
+
+    public BillingRepository(AppDbContext context, ITenantContext tenantContext) : base(context)
     {
+        _tenantContext = tenantContext;
     }
 
     public async Task<Billing?> GetByInvoiceNumberAsync(string invoiceNumber)
@@ -48,15 +51,22 @@ public class BillingRepository : Repository<Billing>, IBillingRepository
             .OrderBy(b => b.BalanceAmount)
             .ToListAsync();
     }
-
-    public async Task<IEnumerable<Billing>> GetPagedAsync(PaginationRequest pagination)
+public async Task<IEnumerable<Billing>> GetPagedAsync(PaginationRequest pagination, int? clinicId = null)
     {
-        return await _dbSet
+        IQueryable<Billing> query = _dbSet;
+
+        // Explicitly filter by clinic from TenantContext
+        if (_tenantContext.HasClinic)
+        {
+            query = query.Where(b => b.ClinicId == _tenantContext.ClinicId);
+        }
+
+        return await query
             .Include(b => b.Patient)
             .Include(b => b.Appointment)
+            .OrderByDescending(b => b.CreatedAt)
             .Skip((pagination.PageNumber - 1) * pagination.PageSize)
             .Take(pagination.PageSize)
-            .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
     }
 

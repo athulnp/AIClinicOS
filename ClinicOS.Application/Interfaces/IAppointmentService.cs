@@ -8,12 +8,12 @@ namespace ClinicOS.Application.Interfaces;
 /// </summary>
 public interface IAppointmentService
 {
-    Task<ApiResponse<AppointmentDto>> CreateAppointmentAsync(CreateAppointmentDto dto, string createdBy);
+    Task<ApiResponse<AppointmentDto>> CreateAppointmentAsync(CreateAppointmentDto dto, string createdBy, int? clinicId = null);
     Task<ApiResponse<AppointmentDto>> RescheduleAppointmentAsync(int id, RescheduleAppointmentDto dto, string updatedBy);
     Task<ApiResponse<AppointmentDto>> UpdateAppointmentStatusAsync(int id, UpdateAppointmentStatusDto dto, string updatedBy);
     Task<ApiResponse> CancelAppointmentAsync(int id, string updatedBy);
     Task<ApiResponse<AppointmentDto>> GetAppointmentByIdAsync(int id);
     Task<PagedResponse<AppointmentDto>> GetPatientAppointmentsAsync(int patientId, PaginationRequest pagination);
     Task<ApiResponse<DoctorScheduleDto>> GetDoctorScheduleAsync(int doctorId, DateTime date);
-    Task<PagedResponse<AppointmentDto>> GetAllAppointmentsAsync(PaginationRequest pagination);
+    Task<PagedResponse<AppointmentDto>> GetAllAppointmentsAsync(PaginationRequest pagination, int? clinicId = null);
 }

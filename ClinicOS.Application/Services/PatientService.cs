@@ -150,9 +150,9 @@ public class PatientService : IPatientService
         return PagedResponse<PatientDto>.Create(patientDtos, pagination.PageNumber, pagination.PageSize, totalCount);
     }
 
-    public async Task<PagedResponse<PatientDto>> GetAllPatientsAsync(PaginationRequest pagination)
+    public async Task<PagedResponse<PatientDto>> GetAllPatientsAsync(PaginationRequest pagination, int? clinicId = null)
     {
-        var patients = await _patientRepository.GetPagedAsync(pagination);
+        var patients = await _patientRepository.GetPagedAsync(pagination, clinicId);
         var patientDtos = _mapper.Map<List<PatientDto>>(patients);
         var totalCount = await _patientRepository.GetTotalCountAsync();
 

@@ -11,8 +11,11 @@ namespace ClinicOS.Infrastructure.Repositories;
 /// </summary>
 public class AppointmentRepository : Repository<Appointment>, IAppointmentRepository
 {
-    public AppointmentRepository(AppDbContext context) : base(context)
+    private readonly ITenantContext _tenantContext;
+
+    public AppointmentRepository(AppDbContext context, ITenantContext tenantContext) : base(context)
     {
+        _tenantContext = tenantContext;
     }
 
     public async Task<IEnumerable<Appointment>> GetByPatientIdAsync(int patientId)
@@ -74,15 +77,23 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
         return await query.AnyAsync();
     }
 
-    public async Task<IEnumerable<Appointment>> GetPagedAsync(PaginationRequest pagination)
+    public async Task<IEnumerable<Appointment>> GetPagedAsync(PaginationRequest pagination, int? clinicId = null)
     {
-        return await _dbSet
+        IQueryable<Appointment> query = _dbSet;
+
+        // Explicitly filter by clinic from TenantContext
+        if (_tenantContext.HasClinic)
+        {
+            query = query.Where(a => a.ClinicId == _tenantContext.ClinicId);
+        }
+
+        return await query
             .Include(a => a.Patient)
             .Include(a => a.Doctor)
-            .Skip((pagination.PageNumber - 1) * pagination.PageSize)
-            .Take(pagination.PageSize)
             .OrderByDescending(a => a.AppointmentDate)
             .ThenBy(a => a.StartTime)
+            .Skip((pagination.PageNumber - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
             .ToListAsync();
     }
 }

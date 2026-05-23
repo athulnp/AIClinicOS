@@ -14,5 +14,5 @@ public interface IPatientService
     Task<ApiResponse<PatientDto>> GetPatientByIdAsync(int id);
     Task<ApiResponse<PatientDto>> GetPatientByCodeAsync(string patientCode);
     Task<PagedResponse<PatientDto>> SearchPatientsAsync(string? searchTerm, PaginationRequest pagination);
-    Task<PagedResponse<PatientDto>> GetAllPatientsAsync(PaginationRequest pagination);
+    Task<PagedResponse<PatientDto>> GetAllPatientsAsync(PaginationRequest pagination, int? clinicId = null);
 }

@@ -42,7 +42,7 @@ public class BillingService : IBillingService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<ApiResponse<BillingDto>> CreateBillingAsync(CreateBillingDto dto, string createdBy)
+    public async Task<ApiResponse<BillingDto>> CreateBillingAsync(CreateBillingDto dto, string createdBy, int? clinicId = null)
     {
         var validationResult = await _createValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
@@ -61,7 +61,8 @@ public class BillingService : IBillingService
         var invoiceNumber = await GenerateInvoiceNumberAsync();
 
         var billing = _mapper.Map<Billing>(dto);
-        billing.ClinicId = patient.ClinicId;
+        // Use clinicId from parameter if provided (for super admins), otherwise use patient's clinic
+        billing.ClinicId = clinicId ?? patient.ClinicId;
         billing.InvoiceNumber = invoiceNumber;
         billing.PaidAmount = 0;
         billing.BalanceAmount = dto.TotalAmount;
@@ -187,9 +188,9 @@ public class BillingService : IBillingService
         return PagedResponse<BillingDto>.Create(billingDtos, pagination.PageNumber, pagination.PageSize, billings.Count());
     }
 
-    public async Task<PagedResponse<BillingDto>> GetAllBillingsAsync(PaginationRequest pagination)
+    public async Task<PagedResponse<BillingDto>> GetAllBillingsAsync(PaginationRequest pagination, int? clinicId = null)
     {
-        var billings = await _billingRepository.GetPagedAsync(pagination);
+        var billings = await _billingRepository.GetPagedAsync(pagination, clinicId);
         var billingDtos = _mapper.Map<List<BillingDto>>(billings);
 
         return PagedResponse<BillingDto>.Create(billingDtos, pagination.PageNumber, pagination.PageSize, billings.Count());

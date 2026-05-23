@@ -23,6 +23,7 @@ public class PatientsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedResponse<PatientDto>>> GetAllPatients([FromQuery] PaginationRequest pagination)
     {
+        // Note: TenantMiddleware sets clinic_id from JWT claims, and global query filter handles filtering
         var result = await _patientService.GetAllPatientsAsync(pagination);
         return Ok(result);
     }
@@ -63,16 +64,31 @@ public class PatientsController : ControllerBase
     {
         var createdBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
         
-        // Get clinic ID from claims or header
-        var clinicIdClaim = User.FindFirst("clinic_id")?.Value;
-        if (string.IsNullOrEmpty(clinicIdClaim))
-        {
-            return BadRequest("Clinic context not found");
-        }
+        int clinicId;
+        var isSuperAdmin = User.IsInRole(RoleNames.SuperAdmin);
         
-        if (!int.TryParse(clinicIdClaim, out int clinicId))
+        if (isSuperAdmin)
         {
-            return BadRequest("Invalid clinic context");
+            // Super admins must provide clinicId in the request body
+            if (!dto.ClinicId.HasValue)
+            {
+                return BadRequest("ClinicId is required for super admins");
+            }
+            clinicId = dto.ClinicId.Value;
+        }
+        else
+        {
+            // Regular staff use clinic_id from claims or header
+            var clinicIdClaim = User.FindFirst("clinic_id")?.Value;
+            if (string.IsNullOrEmpty(clinicIdClaim))
+            {
+                return BadRequest("Clinic context not found");
+            }
+            
+            if (!int.TryParse(clinicIdClaim, out clinicId))
+            {
+                return BadRequest("Invalid clinic context");
+            }
         }
 
         var result = await _patientService.CreatePatientAsync(dto, createdBy, clinicId);

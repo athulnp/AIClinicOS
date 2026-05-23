@@ -14,4 +14,7 @@ public class CreateDoctorDto
     public string? Department { get; set; }
     public string? ClinicLocation { get; set; }
     public bool IsAvailable { get; set; } = true;
+
+    // ClinicId is optional for regular staff (set from context), but required for super admins
+    public int? ClinicId { get; set; }
 }

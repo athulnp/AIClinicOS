@@ -28,6 +28,9 @@ public class CreateAppointmentDto
 
     [MaxLength(2000)]
     public string? Notes { get; set; }
+
+    // ClinicId is optional for regular staff (set from context), but required for super admins
+    public int? ClinicId { get; set; }
 }
 
 /// <summary>
