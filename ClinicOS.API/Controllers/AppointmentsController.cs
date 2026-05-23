@@ -37,7 +37,25 @@ public class AppointmentsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedResponse<AppointmentDto>>> GetAllAppointments([FromQuery] PaginationRequest pagination)
     {
-        var clinicId = _tenantContext.ClinicId;
+        int? clinicId;
+        var isSuperAdmin = User.IsInRole(RoleNames.SuperAdmin);
+        
+        if (isSuperAdmin)
+        {
+            // Super admins can use X-Clinic-Id header from tenant context
+            clinicId = _tenantContext.ClinicId;
+        }
+        else
+        {
+            // Regular staff use clinic_id from JWT claims directly
+            var clinicIdClaim = User.FindFirst("clinic_id")?.Value;
+            if (string.IsNullOrEmpty(clinicIdClaim))
+            {
+                return BadRequest("Clinic context not found");
+            }
+            clinicId = int.TryParse(clinicIdClaim, out var cid) ? cid : null;
+        }
+        
         var result = await _appointmentService.GetAllAppointmentsAsync(pagination, clinicId);
         return Ok(result);
     }
