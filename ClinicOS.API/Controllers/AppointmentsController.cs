@@ -37,8 +37,8 @@ public class AppointmentsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedResponse<AppointmentDto>>> GetAllAppointments([FromQuery] PaginationRequest pagination)
     {
-        // Note: TenantMiddleware sets clinic_id from JWT claims, and global query filter handles filtering
-        var result = await _appointmentService.GetAllAppointmentsAsync(pagination);
+        var clinicId = _tenantContext.ClinicId;
+        var result = await _appointmentService.GetAllAppointmentsAsync(pagination, clinicId);
         return Ok(result);
     }
 

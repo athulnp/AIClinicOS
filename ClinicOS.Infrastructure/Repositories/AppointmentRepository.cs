@@ -81,10 +81,11 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
     {
         IQueryable<Appointment> query = _dbSet;
 
-        // Explicitly filter by clinic from TenantContext
-        if (_tenantContext.HasClinic)
+        // Use passed clinicId if provided (from service), otherwise use TenantContext
+        var effectiveClinicId = clinicId ?? (_tenantContext.HasClinic ? _tenantContext.ClinicId : (int?)null);
+        if (effectiveClinicId.HasValue)
         {
-            query = query.Where(a => a.ClinicId == _tenantContext.ClinicId);
+            query = query.Where(a => a.ClinicId == effectiveClinicId.Value);
         }
 
         return await query
@@ -95,5 +96,19 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
             .Skip((pagination.PageNumber - 1) * pagination.PageSize)
             .Take(pagination.PageSize)
             .ToListAsync();
+    }
+
+    public async Task<int> GetTotalCountAsync(int? clinicId = null)
+    {
+        IQueryable<Appointment> query = _dbSet;
+
+        // Use passed clinicId if provided (from service), otherwise use TenantContext
+        var effectiveClinicId = clinicId ?? (_tenantContext.HasClinic ? _tenantContext.ClinicId : (int?)null);
+        if (effectiveClinicId.HasValue)
+        {
+            query = query.Where(a => a.ClinicId == effectiveClinicId.Value);
+        }
+
+        return await query.CountAsync();
     }
 }

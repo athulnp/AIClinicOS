@@ -125,7 +125,7 @@ public class DoctorsController : ControllerBase
 
     [Authorize(Policy = PermissionCodes.DoctorsManage)]
     [HttpPost]
-    public async Task<ActionResult<DoctorResponseDto>> CreateDoctor([FromBody] CreateDoctorDto dto)
+    public async Task<ActionResult<DoctorResponseDto>> CreateDoctor([FromBody] CreateDoctorWithUserDto dto)
     {
         try
         {
@@ -155,7 +155,7 @@ public class DoctorsController : ControllerBase
                 clinicId = int.TryParse(clinicIdClaim, out var cid) ? cid : null;
             }
 
-            var doctor = await _doctorService.CreateDoctorAsync(dto, clinicId);
+            var doctor = await _doctorService.CreateDoctorWithUserAsync(dto, clinicId);
             return CreatedAtAction(nameof(GetDoctorById), new { id = doctor.Id }, doctor);
         }
         catch (InvalidOperationException ex)

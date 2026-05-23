@@ -63,6 +63,9 @@ public class UserRepository : Repository<User>, IUserRepository
     public async Task<int> GetListCountAsync(int clinicId, UserListQueryDto query) =>
         await BuildListQuery(clinicId, query).CountAsync();
 
+    public async Task<Role?> GetRoleByNameAsync(string roleName) =>
+        await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName && r.ClinicId == null);
+
     private IQueryable<User> BuildListQuery(int clinicId, UserListQueryDto query)
     {
         var q = _dbSet.Where(u => u.ClinicId == clinicId);

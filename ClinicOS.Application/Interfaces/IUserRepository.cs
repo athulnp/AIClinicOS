@@ -14,4 +14,5 @@ public interface IUserRepository : IRepository<User>
     Task<bool> HasDoctorProfileAsync(int userId);
     Task<IEnumerable<User>> GetPagedAsync(int clinicId, UserListQueryDto query);
     Task<int> GetListCountAsync(int clinicId, UserListQueryDto query);
+    Task<Role?> GetRoleByNameAsync(string roleName);
 }

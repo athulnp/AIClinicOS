@@ -184,9 +184,10 @@ public class AppointmentService : IAppointmentService
     public async Task<PagedResponse<AppointmentDto>> GetAllAppointmentsAsync(PaginationRequest pagination, int? clinicId = null)
     {
         var appointments = await _appointmentRepository.GetPagedAsync(pagination, clinicId);
+        var totalCount = await _appointmentRepository.GetTotalCountAsync(clinicId);
         var appointmentDtos = await Task.WhenAll(appointments.Select(MapToDto));
 
-        return PagedResponse<AppointmentDto>.Create(appointmentDtos.ToList(), pagination.PageNumber, pagination.PageSize, appointments.Count());
+        return PagedResponse<AppointmentDto>.Create(appointmentDtos.ToList(), pagination.PageNumber, pagination.PageSize, totalCount);
     }
 
     private async Task<AppointmentDto> MapToDto(Appointment appointment)

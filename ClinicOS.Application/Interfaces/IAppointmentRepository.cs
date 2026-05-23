@@ -14,4 +14,5 @@ public interface IAppointmentRepository : IRepository<Appointment>
     Task<IEnumerable<Appointment>> GetDoctorScheduleAsync(int doctorId, DateTime date);
     Task<bool> HasOverlappingAppointmentAsync(int doctorId, DateTime date, TimeSpan startTime, TimeSpan endTime, int? excludeAppointmentId = null);
     Task<IEnumerable<Appointment>> GetPagedAsync(PaginationRequest pagination, int? clinicId = null);
+    Task<int> GetTotalCountAsync(int? clinicId = null);
 }

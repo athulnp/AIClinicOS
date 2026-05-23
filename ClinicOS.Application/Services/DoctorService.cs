@@ -72,6 +72,79 @@ public class DoctorService : IDoctorService
         return _mapper.Map<IEnumerable<DoctorResponseDto>>(doctors);
     }
 
+    public async Task<DoctorResponseDto> CreateDoctorWithUserAsync(CreateDoctorWithUserDto dto, int? clinicId = null)
+    {
+        // Check if license number already exists
+        if (await _doctorRepository.LicenseNumberExistsAsync(dto.LicenseNumber))
+        {
+            throw new InvalidOperationException("License number already exists");
+        }
+
+        // Check if username already exists
+        if (await _userRepository.UsernameExistsAsync(dto.Username, clinicId))
+        {
+            throw new InvalidOperationException("Username already exists");
+        }
+
+        // Check if email already exists
+        if (await _userRepository.EmailExistsAsync(dto.Email, clinicId))
+        {
+            throw new InvalidOperationException("Email already exists");
+        }
+
+        // Create user account
+        var user = new User
+        {
+            Username = dto.Username,
+            FullName = dto.FullName,
+            Email = dto.Email,
+            PhoneNumber = dto.PhoneNumber,
+            ClinicId = clinicId,
+            IsActive = true
+        };
+
+        // Hash password
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+        await _userRepository.AddAsync(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Get Doctor role from the repository
+        var doctorRole = await _userRepository.GetRoleByNameAsync(RoleNames.Doctor);
+        if (doctorRole == null)
+        {
+            throw new InvalidOperationException("Doctor role not found");
+        }
+
+        // Assign Doctor role to user
+        user.UserRoleAssignments.Add(new UserRoleAssignment
+        {
+            UserId = user.Id,
+            RoleId = doctorRole.Id
+        });
+        await _unitOfWork.SaveChangesAsync();
+
+        // Create doctor profile
+        var doctor = new Doctor
+        {
+            UserId = user.Id,
+            Specialization = dto.Specialization,
+            LicenseNumber = dto.LicenseNumber,
+            YearsOfExperience = dto.YearsOfExperience,
+            Bio = dto.Bio,
+            ConsultationFee = dto.ConsultationFee,
+            Department = dto.Department,
+            ClinicLocation = dto.ClinicLocation,
+            IsAvailable = dto.IsAvailable,
+            ClinicId = clinicId ?? user.ClinicId!.Value
+        };
+
+        await _doctorRepository.CreateAsync(doctor);
+        await _unitOfWork.SaveChangesAsync();
+
+        return _mapper.Map<DoctorResponseDto>(doctor);
+    }
+
     public async Task<DoctorResponseDto> CreateDoctorAsync(CreateDoctorDto dto, int? clinicId = null)
     {
         var validationResult = await _createValidator.ValidateAsync(dto);
@@ -152,6 +225,20 @@ public class DoctorService : IDoctorService
         if (!await _doctorRepository.ExistsAsync(id))
         {
             throw new InvalidOperationException($"Doctor with ID {id} not found");
+        }
+
+        var doctor = await _doctorRepository.GetByIdAsync(id);
+        if (doctor == null)
+        {
+            return false;
+        }
+
+        // Deactivate the associated user account
+        var user = await _userRepository.GetByIdAsync(doctor.UserId);
+        if (user != null)
+        {
+            user.IsActive = false;
+            _userRepository.Update(user);
         }
 
         var result = await _doctorRepository.DeleteAsync(id);
