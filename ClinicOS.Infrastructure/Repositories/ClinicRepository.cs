@@ -58,4 +58,7 @@ public class ClinicRepository : IClinicRepository
 
     public void Update(Clinic clinic) =>
         _context.Clinics.Update(clinic);
+
+    public void Delete(Clinic clinic) =>
+        _context.Clinics.Remove(clinic);
 }

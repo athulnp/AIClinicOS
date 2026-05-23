@@ -17,6 +17,7 @@ public class BillingService : IBillingService
     private readonly IPatientRepository _patientRepository;
     private readonly IAppointmentRepository _appointmentRepository;
     private readonly IValidator<CreateBillingDto> _createValidator;
+    private readonly IValidator<UpdateBillingDto> _updateValidator;
     private readonly IValidator<RecordPaymentDto> _paymentValidator;
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
@@ -26,6 +27,7 @@ public class BillingService : IBillingService
         IPatientRepository patientRepository,
         IAppointmentRepository appointmentRepository,
         IValidator<CreateBillingDto> createValidator,
+        IValidator<UpdateBillingDto> updateValidator,
         IValidator<RecordPaymentDto> paymentValidator,
         IMapper mapper,
         IUnitOfWork unitOfWork)
@@ -34,6 +36,7 @@ public class BillingService : IBillingService
         _patientRepository = patientRepository;
         _appointmentRepository = appointmentRepository;
         _createValidator = createValidator;
+        _updateValidator = updateValidator;
         _paymentValidator = paymentValidator;
         _mapper = mapper;
         _unitOfWork = unitOfWork;
@@ -70,6 +73,48 @@ public class BillingService : IBillingService
 
         var billingDto = await MapToDto(billing);
         return ApiResponse<BillingDto>.SuccessResponse(billingDto, "Billing record created successfully");
+    }
+
+    public async Task<ApiResponse<BillingDto>> UpdateBillingAsync(int id, UpdateBillingDto dto, string updatedBy)
+    {
+        var validationResult = await _updateValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
+        {
+            return ApiResponse<BillingDto>.ErrorResponse("Validation failed", validationResult.Errors.Select(e => e.ErrorMessage).ToList());
+        }
+
+        var billing = await _billingRepository.GetByIdAsync(id);
+        if (billing == null)
+        {
+            return ApiResponse<BillingDto>.ErrorResponse("Billing record not found");
+        }
+
+        billing.PatientId = dto.PatientId;
+        billing.TotalAmount = dto.TotalAmount;
+        billing.PaymentMethod = dto.PaymentMethod;
+        billing.Notes = dto.Notes;
+        billing.BalanceAmount = dto.TotalAmount - billing.PaidAmount;
+        billing.UpdatedBy = updatedBy;
+
+        _billingRepository.Update(billing);
+        await _unitOfWork.SaveChangesAsync();
+
+        var billingDto = await MapToDto(billing);
+        return ApiResponse<BillingDto>.SuccessResponse(billingDto, "Billing record updated successfully");
+    }
+
+    public async Task<ApiResponse> DeleteBillingAsync(int id, string deletedBy)
+    {
+        var billing = await _billingRepository.GetByIdAsync(id);
+        if (billing == null)
+        {
+            return ApiResponse.ErrorResponse("Billing record not found");
+        }
+
+        _billingRepository.Delete(billing);
+        await _unitOfWork.SaveChangesAsync();
+
+        return ApiResponse.SuccessResponse("Billing record deleted successfully");
     }
 
     public async Task<ApiResponse<BillingDto>> RecordPaymentAsync(int id, RecordPaymentDto dto, string updatedBy)

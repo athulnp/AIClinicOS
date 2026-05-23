@@ -18,7 +18,7 @@ public static class RbacSeeder
     public static async Task MigrateFromLegacyRoleColumnAsync(AppDbContext context)
     {
         var legacyColumnLength = await context.Database
-            .SqlQueryRaw<int?>("SELECT COL_LENGTH('Users', 'Role')")
+            .SqlQueryRaw<int?>("SELECT CAST(COL_LENGTH('Users', 'Role') AS int) AS [Value]")
             .FirstOrDefaultAsync();
 
         if (!legacyColumnLength.HasValue || legacyColumnLength.Value == 0)

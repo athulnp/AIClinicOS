@@ -68,4 +68,15 @@ public class ClinicsController : ControllerBase
             return BadRequest(result);
         return Ok(result.Data);
     }
+
+    [Authorize(Policy = PermissionCodes.ClinicsWrite)]
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteClinic(int id)
+    {
+        var deletedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var result = await _clinicService.DeleteClinicAsync(id, deletedBy);
+        if (!result.Success)
+            return NotFound(result);
+        return Ok(result);
+    }
 }

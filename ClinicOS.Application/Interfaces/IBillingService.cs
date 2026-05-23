@@ -9,6 +9,8 @@ namespace ClinicOS.Application.Interfaces;
 public interface IBillingService
 {
     Task<ApiResponse<BillingDto>> CreateBillingAsync(CreateBillingDto dto, string createdBy);
+    Task<ApiResponse<BillingDto>> UpdateBillingAsync(int id, UpdateBillingDto dto, string updatedBy);
+    Task<ApiResponse> DeleteBillingAsync(int id, string deletedBy);
     Task<ApiResponse<BillingDto>> RecordPaymentAsync(int id, RecordPaymentDto dto, string updatedBy);
     Task<ApiResponse<BillingDto>> GetBillingByIdAsync(int id);
     Task<ApiResponse<BillingDto>> GetBillingByInvoiceNumberAsync(string invoiceNumber);

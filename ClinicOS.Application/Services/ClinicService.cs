@@ -85,6 +85,18 @@ public class ClinicService : IClinicService
         return ApiResponse<ClinicDto>.SuccessResponse(MapToDto(clinic), "Clinic updated successfully");
     }
 
+    public async Task<ApiResponse> DeleteClinicAsync(int id, string deletedBy)
+    {
+        var clinic = await _clinicRepository.GetByIdAsync(id);
+        if (clinic == null)
+            return ApiResponse.ErrorResponse("Clinic not found");
+
+        _clinicRepository.Delete(clinic);
+        await _unitOfWork.SaveChangesAsync();
+
+        return ApiResponse.SuccessResponse("Clinic deleted successfully");
+    }
+
     public async Task<ApiResponse<ClinicDto>> GetClinicByIdAsync(int id)
     {
         var clinic = await _clinicRepository.GetByIdAsync(id);

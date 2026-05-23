@@ -89,4 +89,26 @@ public class BillingController : ControllerBase
             return BadRequest(result);
         return Ok(result.Data);
     }
+
+    [Authorize(Policy = PermissionCodes.BillingWrite)]
+    [HttpPut("{id}")]
+    public async Task<ActionResult<BillingDto>> UpdateBilling(int id, [FromBody] UpdateBillingDto dto)
+    {
+        var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var result = await _billingService.UpdateBillingAsync(id, dto, updatedBy);
+        if (!result.Success)
+            return BadRequest(result);
+        return Ok(result.Data);
+    }
+
+    [Authorize(Policy = PermissionCodes.BillingWrite)]
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteBilling(int id)
+    {
+        var deletedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var result = await _billingService.DeleteBillingAsync(id, deletedBy);
+        if (!result.Success)
+            return NotFound(result);
+        return Ok(result);
+    }
 }

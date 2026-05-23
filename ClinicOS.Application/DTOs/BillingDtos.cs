@@ -25,6 +25,27 @@ public class CreateBillingDto
 }
 
 /// <summary>
+/// DTO for updating a billing record
+/// </summary>
+public class UpdateBillingDto
+{
+    [Required(ErrorMessage = "Patient ID is required")]
+    public int PatientId { get; set; }
+
+    public int? AppointmentId { get; set; }
+
+    [Required(ErrorMessage = "Total amount is required")]
+    [Range(0.01, double.MaxValue, ErrorMessage = "Total amount must be greater than 0")]
+    public decimal TotalAmount { get; set; }
+
+    [Required(ErrorMessage = "Payment method is required")]
+    public PaymentMethod PaymentMethod { get; set; }
+
+    [MaxLength(2000)]
+    public string? Notes { get; set; }
+}
+
+/// <summary>
 /// DTO for recording a payment
 /// </summary>
 public class RecordPaymentDto

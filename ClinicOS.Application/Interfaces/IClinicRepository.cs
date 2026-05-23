@@ -13,4 +13,5 @@ public interface IClinicRepository
     Task<bool> CodeExistsAsync(string code);
     Task AddAsync(Clinic clinic);
     void Update(Clinic clinic);
+    void Delete(Clinic clinic);
 }
