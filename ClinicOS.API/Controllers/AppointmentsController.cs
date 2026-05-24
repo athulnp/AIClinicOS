@@ -154,6 +154,19 @@ public class AppointmentsController : ControllerBase
     }
 
     [Authorize(Policy = PermissionCodes.AppointmentsWrite)]
+    [HttpPut("{id}")]
+    public async Task<ActionResult<AppointmentDto>> UpdateAppointment(
+        int id,
+        [FromBody] UpdateAppointmentDto dto)
+    {
+        var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var result = await _appointmentService.UpdateAppointmentAsync(id, dto, updatedBy);
+        if (!result.Success)
+            return BadRequest(result);
+        return Ok(result.Data);
+    }
+
+    [Authorize(Policy = PermissionCodes.AppointmentsWrite)]
     [HttpPut("{id}/cancel")]
     public async Task<ActionResult> CancelAppointment(int id)
     {

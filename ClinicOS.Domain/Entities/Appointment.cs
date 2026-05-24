@@ -33,6 +33,9 @@ public class Appointment : AuditableEntity, ITenantEntity
     [MaxLength(500)]
     public string? Reason { get; set; }
 
+    [MaxLength(1000)]
+    public string? Description { get; set; }
+
     [MaxLength(2000)]
     public string? Notes { get; set; }
 

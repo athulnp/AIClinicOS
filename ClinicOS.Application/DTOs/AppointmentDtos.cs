@@ -26,6 +26,9 @@ public class CreateAppointmentDto
     [MaxLength(500)]
     public string? Reason { get; set; }
 
+    [MaxLength(1000)]
+    public string? Description { get; set; }
+
     [MaxLength(2000)]
     public string? Notes { get; set; }
 
@@ -61,6 +64,21 @@ public class UpdateAppointmentStatusDto
 }
 
 /// <summary>
+/// DTO for updating appointment details
+/// </summary>
+public class UpdateAppointmentDto
+{
+    [MaxLength(500)]
+    public string? Reason { get; set; }
+
+    [MaxLength(1000)]
+    public string? Description { get; set; }
+
+    [MaxLength(2000)]
+    public string? Notes { get; set; }
+}
+
+/// <summary>
 /// DTO for appointment response
 /// </summary>
 public class AppointmentDto
@@ -75,6 +93,7 @@ public class AppointmentDto
     public TimeSpan EndTime { get; set; }
     public AppointmentStatus Status { get; set; }
     public string? Reason { get; set; }
+    public string? Description { get; set; }
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; }
 }

@@ -190,6 +190,26 @@ public class AppointmentService : IAppointmentService
         return PagedResponse<AppointmentDto>.Create(appointmentDtos.ToList(), pagination.PageNumber, pagination.PageSize, totalCount);
     }
 
+    public async Task<ApiResponse<AppointmentDto>> UpdateAppointmentAsync(int id, UpdateAppointmentDto dto, string updatedBy)
+    {
+        var appointment = await _appointmentRepository.GetByIdAsync(id);
+        if (appointment == null)
+        {
+            return ApiResponse<AppointmentDto>.ErrorResponse("Appointment not found");
+        }
+
+        appointment.Reason = dto.Reason ?? appointment.Reason;
+        appointment.Description = dto.Description ?? appointment.Description;
+        appointment.Notes = dto.Notes ?? appointment.Notes;
+        appointment.UpdatedBy = updatedBy;
+
+        _appointmentRepository.Update(appointment);
+        await _unitOfWork.SaveChangesAsync();
+
+        var appointmentDto = await MapToDto(appointment);
+        return ApiResponse<AppointmentDto>.SuccessResponse(appointmentDto, "Appointment updated successfully");
+    }
+
     private async Task<AppointmentDto> MapToDto(Appointment appointment)
     {
         var dto = _mapper.Map<AppointmentDto>(appointment);

@@ -1,4 +1,5 @@
 using ClinicOS.API.Authorization;
+using ClinicOS.API.Logging;
 using ClinicOS.API.Middleware;
 using ClinicOS.API.Services;
 using ClinicOS.Application.DTOs;
@@ -23,8 +24,8 @@ var builder = WebApplication.CreateBuilder(args);
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
+    .Enrich.With<CorrelationIdEnricher>()
     .WriteTo.Console()
-    .WriteTo.File("logs/clinic-.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 builder.Host.UseSerilog();
@@ -33,6 +34,11 @@ builder.Host.UseSerilog();
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantContext, TenantContext>();
+
+// Set HttpContextAccessor for CorrelationIdEnricher
+var serviceProvider = builder.Services.BuildServiceProvider();
+var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
+CorrelationIdEnricher.SetHttpContextAccessor(httpContextAccessor);
 
 // Configure DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -47,6 +53,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRbacRepository, RbacRepository>();
 builder.Services.AddScoped<IReminderRepository, ReminderRepository>();
 builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
+builder.Services.AddScoped<IAppointmentNoteRepository, AppointmentNoteRepository>();
 
 // Register Unit of Work
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -54,6 +61,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 // Register services
 builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+builder.Services.AddScoped<IAppointmentNoteService, AppointmentNoteService>();
 builder.Services.AddScoped<IBillingService, BillingService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -177,6 +185,9 @@ using (var scope = app.Services.CreateScope())
     });
 //}
 
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<SensitiveDataFilterMiddleware>();
+app.UseMiddleware<PerformanceLoggingMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 // app.UseMiddleware<ApiKeyMiddleware>(); // Uncomment if API key authentication is needed
 

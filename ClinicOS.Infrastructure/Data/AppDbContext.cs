@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<Clinic> Clinics { get; set; }
     public DbSet<Patient> Patients { get; set; }
     public DbSet<Appointment> Appointments { get; set; }
+    public DbSet<AppointmentNote> AppointmentNotes { get; set; }
     public DbSet<Billing> Billings { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<Permission> Permissions { get; set; }
@@ -132,6 +133,9 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Reminder>().HasQueryFilter(r =>
             !_tenantContext.HasClinic || r.ClinicId == _tenantContext.ClinicId);
+
+        modelBuilder.Entity<AppointmentNote>().HasQueryFilter(an =>
+            !_tenantContext.HasClinic || an.ClinicId == _tenantContext.ClinicId);
 
         modelBuilder.Entity<Clinic>()
             .HasMany(c => c.Users)

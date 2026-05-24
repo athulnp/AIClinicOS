@@ -43,5 +43,10 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.User != null ? src.User.FullName : ""))
             .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User != null ? src.User.Email : ""))
             .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.User != null ? src.User.PhoneNumber : ""));
+
+        // AppointmentNote mappings
+        CreateMap<CreateAppointmentNoteDto, AppointmentNote>();
+        CreateMap<UpdateAppointmentNoteDto, AppointmentNote>();
+        CreateMap<AppointmentNote, AppointmentNoteDto>();
     }
 }
