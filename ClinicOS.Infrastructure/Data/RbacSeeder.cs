@@ -11,7 +11,6 @@ public static class RbacSeeder
         await SeedPermissionsAsync(context);
         await SeedRolesAsync(context);
         await context.SaveChangesAsync();
-        await MigrateFromLegacyRoleColumnAsync(context);
     }
 
     /// <summary>Moves Users.Role enum column into UserRoleAssignments, then drops the legacy column.</summary>
