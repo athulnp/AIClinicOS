@@ -83,19 +83,22 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
 
         // Use passed clinicId if provided (from service), otherwise use TenantContext
         var effectiveClinicId = clinicId ?? (_tenantContext.HasClinic ? _tenantContext.ClinicId : (int?)null);
+        
         if (effectiveClinicId.HasValue)
         {
             query = query.Where(a => a.ClinicId == effectiveClinicId.Value);
         }
 
-        return await query
-            .Include(a => a.Patient)
-            .Include(a => a.Doctor)
+        // Get paged appointments without includes to avoid global query filter issues
+        // Related entities (Patient, Doctor) are loaded manually in the service layer's MapToDto method
+        var pagedAppointments = await query
             .OrderByDescending(a => a.AppointmentDate)
             .ThenBy(a => a.StartTime)
             .Skip((pagination.PageNumber - 1) * pagination.PageSize)
             .Take(pagination.PageSize)
             .ToListAsync();
+
+        return pagedAppointments;
     }
 
     public async Task<int> GetTotalCountAsync(int? clinicId = null)
