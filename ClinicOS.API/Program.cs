@@ -148,14 +148,14 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Configure CORS
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
+    ?? new[] { "http://localhost:5173", "http://localhost:3000" };
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowSpecificOrigins", policy =>
     {
-        policy.WithOrigins(
-                "https://green-beach-0f9ffc200.7.azurestaticapps.net",
-                "http://localhost:5173",
-                "http://localhost:3000")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -197,7 +197,7 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowAll");
+app.UseCors("AllowSpecificOrigins");
 
 app.UseAuthentication();
 app.UseMiddleware<TenantMiddleware>();
