@@ -15,6 +15,7 @@ public class AppointmentService : IAppointmentService
 {
     private readonly IAppointmentRepository _appointmentRepository;
     private readonly IPatientRepository _patientRepository;
+    private readonly IDoctorRepository _doctorRepository;
     private readonly IValidator<CreateAppointmentDto> _createValidator;
     private readonly IValidator<RescheduleAppointmentDto> _rescheduleValidator;
     private readonly IMapper _mapper;
@@ -23,6 +24,7 @@ public class AppointmentService : IAppointmentService
     public AppointmentService(
         IAppointmentRepository appointmentRepository,
         IPatientRepository patientRepository,
+        IDoctorRepository doctorRepository,
         IValidator<CreateAppointmentDto> createValidator,
         IValidator<RescheduleAppointmentDto> rescheduleValidator,
         IMapper mapper,
@@ -30,6 +32,7 @@ public class AppointmentService : IAppointmentService
     {
         _appointmentRepository = appointmentRepository;
         _patientRepository = patientRepository;
+        _doctorRepository = doctorRepository;
         _createValidator = createValidator;
         _rescheduleValidator = rescheduleValidator;
         _mapper = mapper;
@@ -160,22 +163,34 @@ public class AppointmentService : IAppointmentService
     {
         var appointments = await _appointmentRepository.GetByPatientIdAsync(patientId);
         var pagedAppointments = appointments.Skip((pagination.PageNumber - 1) * pagination.PageSize).Take(pagination.PageSize).ToList();
-        var appointmentDtos = await Task.WhenAll(pagedAppointments.Select(MapToDto));
+        
+        // Use sequential loop to avoid DbContext concurrency issues
+        var appointmentDtos = new List<AppointmentDto>();
+        foreach (var appointment in pagedAppointments)
+        {
+            appointmentDtos.Add(await MapToDto(appointment));
+        }
 
-        return PagedResponse<AppointmentDto>.Create(appointmentDtos.ToList(), pagination.PageNumber, pagination.PageSize, appointments.Count());
+        return PagedResponse<AppointmentDto>.Create(appointmentDtos, pagination.PageNumber, pagination.PageSize, appointments.Count());
     }
 
     public async Task<ApiResponse<DoctorScheduleDto>> GetDoctorScheduleAsync(int doctorId, DateTime date)
     {
         var appointments = await _appointmentRepository.GetDoctorScheduleAsync(doctorId, date);
-        var appointmentDtos = await Task.WhenAll(appointments.Select(MapToDto));
+        
+        // Use sequential loop to avoid DbContext concurrency issues
+        var appointmentDtos = new List<AppointmentDto>();
+        foreach (var appointment in appointments)
+        {
+            appointmentDtos.Add(await MapToDto(appointment));
+        }
 
         var schedule = new DoctorScheduleDto
         {
             DoctorId = doctorId,
             DoctorName = appointmentDtos.FirstOrDefault()?.DoctorName ?? "",
             Date = date,
-            Appointments = appointmentDtos.ToList()
+            Appointments = appointmentDtos
         };
 
         return ApiResponse<DoctorScheduleDto>.SuccessResponse(schedule);
@@ -185,9 +200,16 @@ public class AppointmentService : IAppointmentService
     {
         var appointments = await _appointmentRepository.GetPagedAsync(pagination, clinicId);
         var totalCount = await _appointmentRepository.GetTotalCountAsync(clinicId);
-        var appointmentDtos = await Task.WhenAll(appointments.Select(MapToDto));
+        
+        // Use sequential loop to avoid DbContext concurrency issues
+        // For typical pagination sizes (20-50 items), performance impact is negligible
+        var appointmentDtos = new List<AppointmentDto>();
+        foreach (var appointment in appointments)
+        {
+            appointmentDtos.Add(await MapToDto(appointment));
+        }
 
-        return PagedResponse<AppointmentDto>.Create(appointmentDtos.ToList(), pagination.PageNumber, pagination.PageSize, totalCount);
+        return PagedResponse<AppointmentDto>.Create(appointmentDtos, pagination.PageNumber, pagination.PageSize, totalCount);
     }
 
     public async Task<ApiResponse<AppointmentDto>> UpdateAppointmentAsync(int id, UpdateAppointmentDto dto, string updatedBy)
@@ -219,6 +241,12 @@ public class AppointmentService : IAppointmentService
         {
             var patient = await _patientRepository.GetByIdAsync(appointment.PatientId);
             dto.PatientName = patient?.FullName ?? "";
+        }
+        
+        if (appointment.Doctor == null)
+        {
+            var doctor = await _doctorRepository.GetByIdAsync(appointment.DoctorId);
+            dto.DoctorName = doctor?.User?.FullName ?? "";
         }
 
         return dto;
