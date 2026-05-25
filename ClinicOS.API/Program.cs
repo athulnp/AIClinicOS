@@ -150,19 +150,16 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Configure CORS
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
-    ?? new[] { "http://localhost:5173", "http://localhost:3000" };
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[]
+    {
+        "https://green-beach-0f9ffc200.7.azurestaticapps.net",
+        "http://localhost:5173",
+        "https://localhost:5173"
+    };
 
 builder.Services.AddCors(options =>
 {
-    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-        ?? new[]
-        {
-            "https://green-beach-0f9ffc200.7.azurestaticapps.net",
-            "http://localhost:5173",
-            "https://localhost:5173"
-        };
-
     var isDevelopment = builder.Environment.IsDevelopment();
 
     options.AddPolicy("AllowFrontend", policy =>
