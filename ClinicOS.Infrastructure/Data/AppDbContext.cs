@@ -29,6 +29,7 @@ public class AppDbContext : DbContext
     public DbSet<UserRoleAssignment> UserRoleAssignments { get; set; }
     public DbSet<Doctor> Doctors { get; set; }
     public DbSet<Reminder> Reminders { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -209,6 +210,22 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(r => r.ClinicId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // AuditLog configuration with indexes for performance
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(a => new { a.ClinicId, a.Timestamp });
+
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(a => new { a.ClinicId, a.UserId });
+
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(a => a.EntityType);
+
+        modelBuilder.Entity<AuditLog>()
+            .HasOne(a => a.Clinic)
+            .WithMany()
+            .HasForeignKey(a => a.ClinicId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     public override int SaveChanges()

@@ -5,9 +5,10 @@ namespace ClinicOS.Application.Interfaces;
 
 public interface IUserService
 {
-    Task<ApiResponse<UserDto>> CreateUserAsync(CreateUserDto dto, string createdBy, int? callerClinicId);
-    Task<ApiResponse<UserDto>> UpdateUserAsync(int id, UpdateUserDto dto, string updatedBy);
-    Task<ApiResponse> DeactivateUserAsync(int id, string deactivatedBy);
+    Task<ApiResponse<UserDto>> CreateUserAsync(CreateUserDto dto, string createdBy, int userId, int? callerClinicId);
+    Task<ApiResponse<UserDto>> UpdateUserAsync(int id, UpdateUserDto dto, string updatedBy, int userId);
+    Task<ApiResponse> DeactivateUserAsync(int id, string deactivatedBy, int userId);
+    Task<ApiResponse> ActivateUserAsync(int id, string activatedBy, int userId);
     Task<ApiResponse<UserDto>> GetUserByIdAsync(int id);
     Task<ApiResponse<UserDto>> GetCurrentUserAsync(int userId);
     Task<ApiResponse<UserDto>> UpdateProfileAsync(int userId, UpdateProfileDto dto);

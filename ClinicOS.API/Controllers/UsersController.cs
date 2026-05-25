@@ -46,6 +46,7 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<UserDto>> CreateUser([FromBody] CreateUserDto dto)
     {
         var createdBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         
         int? clinicId;
         var isSuperAdmin = User.IsInRole(RoleNames.SuperAdmin);
@@ -65,7 +66,7 @@ public class UsersController : ControllerBase
             clinicId = int.TryParse(User.FindFirst(TenantConstants.ClinicIdClaim)?.Value, out var cid) ? cid : null;
         }
 
-        var result = await _userService.CreateUserAsync(dto, createdBy, clinicId);
+        var result = await _userService.CreateUserAsync(dto, createdBy, userId, clinicId);
         if (!result.Success)
             return BadRequest(result);
         return CreatedAtAction(nameof(GetUser), new { id = result.Data!.Id }, result.Data);
@@ -76,7 +77,8 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<UserDto>> UpdateUser(int id, [FromBody] UpdateUserDto dto)
     {
         var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _userService.UpdateUserAsync(id, dto, updatedBy);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _userService.UpdateUserAsync(id, dto, updatedBy, userId);
         if (!result.Success)
             return BadRequest(result);
         return Ok(result.Data);
@@ -87,7 +89,20 @@ public class UsersController : ControllerBase
     public async Task<ActionResult> DeactivateUser(int id)
     {
         var deactivatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _userService.DeactivateUserAsync(id, deactivatedBy);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _userService.DeactivateUserAsync(id, deactivatedBy, userId);
+        if (!result.Success)
+            return BadRequest(result);
+        return Ok(result);
+    }
+
+    [Authorize(Policy = PermissionCodes.UsersManage)]
+    [HttpPut("{id}/activate")]
+    public async Task<ActionResult> ActivateUser(int id)
+    {
+        var activatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _userService.ActivateUserAsync(id, activatedBy, userId);
         if (!result.Success)
             return BadRequest(result);
         return Ok(result);

@@ -63,7 +63,8 @@ public class PatientsController : ControllerBase
     public async Task<ActionResult<PatientDto>> CreatePatient([FromBody] CreatePatientDto dto)
     {
         var createdBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
         int clinicId;
         var isSuperAdmin = User.IsInRole(RoleNames.SuperAdmin);
         
@@ -91,7 +92,7 @@ public class PatientsController : ControllerBase
             }
         }
 
-        var result = await _patientService.CreatePatientAsync(dto, createdBy, clinicId);
+        var result = await _patientService.CreatePatientAsync(dto, createdBy, userId, clinicId);
         if (!result.Success)
             return BadRequest(result);
         return CreatedAtAction(nameof(GetPatient), new { id = result.Data!.Id }, result.Data);
@@ -102,7 +103,8 @@ public class PatientsController : ControllerBase
     public async Task<ActionResult<PatientDto>> UpdatePatient(int id, [FromBody] UpdatePatientDto dto)
     {
         var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _patientService.UpdatePatientAsync(id, dto, updatedBy);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _patientService.UpdatePatientAsync(id, dto, updatedBy, userId);
         if (!result.Success)
             return BadRequest(result);
         return Ok(result.Data);
@@ -113,7 +115,8 @@ public class PatientsController : ControllerBase
     public async Task<ActionResult> DeletePatient(int id)
     {
         var deletedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _patientService.DeletePatientAsync(id, deletedBy);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _patientService.DeletePatientAsync(id, deletedBy, userId);
         if (!result.Success)
             return NotFound(result);
         return Ok(result);

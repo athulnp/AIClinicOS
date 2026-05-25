@@ -97,6 +97,7 @@ public class AppointmentsController : ControllerBase
     public async Task<ActionResult<AppointmentDto>> CreateAppointment([FromBody] CreateAppointmentDto dto)
     {
         var createdBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         
         int? clinicId;
         var isSuperAdmin = User.IsInRole(RoleNames.SuperAdmin);
@@ -121,7 +122,7 @@ public class AppointmentsController : ControllerBase
             clinicId = int.TryParse(clinicIdClaim, out var cid) ? cid : null;
         }
 
-        var result = await _appointmentService.CreateAppointmentAsync(dto, createdBy, clinicId);
+        var result = await _appointmentService.CreateAppointmentAsync(dto, createdBy, userId, clinicId);
         if (!result.Success)
             return BadRequest(result);
         return CreatedAtAction(nameof(GetAppointment), new { id = result.Data!.Id }, result.Data);
@@ -134,7 +135,8 @@ public class AppointmentsController : ControllerBase
         [FromBody] RescheduleAppointmentDto dto)
     {
         var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _appointmentService.RescheduleAppointmentAsync(id, dto, updatedBy);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _appointmentService.RescheduleAppointmentAsync(id, dto, updatedBy, userId);
         if (!result.Success)
             return BadRequest(result);
         return Ok(result.Data);
@@ -147,7 +149,8 @@ public class AppointmentsController : ControllerBase
         [FromBody] UpdateAppointmentStatusDto dto)
     {
         var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _appointmentService.UpdateAppointmentStatusAsync(id, dto, updatedBy);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _appointmentService.UpdateAppointmentStatusAsync(id, dto, updatedBy, userId);
         if (!result.Success)
             return BadRequest(result);
         return Ok(result.Data);
@@ -160,7 +163,8 @@ public class AppointmentsController : ControllerBase
         [FromBody] UpdateAppointmentDto dto)
     {
         var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _appointmentService.UpdateAppointmentAsync(id, dto, updatedBy);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _appointmentService.UpdateAppointmentAsync(id, dto, updatedBy, userId);
         if (!result.Success)
             return BadRequest(result);
         return Ok(result.Data);
@@ -171,7 +175,8 @@ public class AppointmentsController : ControllerBase
     public async Task<ActionResult> CancelAppointment(int id)
     {
         var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _appointmentService.CancelAppointmentAsync(id, updatedBy);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _appointmentService.CancelAppointmentAsync(id, updatedBy, userId);
         if (!result.Success)
             return NotFound(result);
         return Ok(result);

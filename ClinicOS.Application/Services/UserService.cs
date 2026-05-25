@@ -17,6 +17,7 @@ public class UserService : IUserService
     private readonly IValidator<UpdateProfileDto> _profileValidator;
     private readonly IValidator<ChangePasswordDto> _passwordValidator;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAuditLogService _auditLogService;
 
     public UserService(
         IUserRepository userRepository,
@@ -27,7 +28,8 @@ public class UserService : IUserService
         IValidator<UpdateUserDto> updateValidator,
         IValidator<UpdateProfileDto> profileValidator,
         IValidator<ChangePasswordDto> passwordValidator,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAuditLogService auditLogService)
     {
         _userRepository = userRepository;
         _clinicRepository = clinicRepository;
@@ -38,10 +40,11 @@ public class UserService : IUserService
         _profileValidator = profileValidator;
         _passwordValidator = passwordValidator;
         _unitOfWork = unitOfWork;
+        _auditLogService = auditLogService;
     }
 
     public async Task<ApiResponse<UserDto>> CreateUserAsync(
-        CreateUserDto dto, string createdBy, int? callerClinicId)
+        CreateUserDto dto, string createdBy, int userId, int? callerClinicId)
     {
         var validation = await _createValidator.ValidateAsync(dto);
         if (!validation.IsValid)
@@ -82,11 +85,26 @@ public class UserService : IUserService
 
         await _rbacRepository.AssignRoleToUserAsync(user.Id, role.Id);
 
+        // Log audit activity
+        if (clinicId.HasValue)
+        {
+            await _auditLogService.LogActivityAsync(
+                clinicId.Value,
+                userId,
+                createdBy,
+                "CREATE",
+                "User",
+                user.Id,
+                user.FullName,
+                $"Created new user: {user.FullName} with role {role.Name}"
+            );
+        }
+
         var loaded = await _userRepository.GetByIdAsync(user.Id);
         return ApiResponse<UserDto>.SuccessResponse(MapToUserDto(loaded!), "User created successfully");
     }
 
-    public async Task<ApiResponse<UserDto>> UpdateUserAsync(int id, UpdateUserDto dto, string updatedBy)
+    public async Task<ApiResponse<UserDto>> UpdateUserAsync(int id, UpdateUserDto dto, string updatedBy, int userId)
     {
         var validation = await _updateValidator.ValidateAsync(dto);
         if (!validation.IsValid)
@@ -121,11 +139,26 @@ public class UserService : IUserService
 
         await _rbacRepository.ReplaceUserRoleAsync(id, role.Id);
 
+        // Log audit activity
+        if (user.ClinicId.HasValue)
+        {
+            await _auditLogService.LogActivityAsync(
+                user.ClinicId.Value,
+                userId,
+                updatedBy,
+                "UPDATE",
+                "User",
+                user.Id,
+                user.FullName,
+                $"Updated user: {user.FullName} with role {role.Name}"
+            );
+        }
+
         var loaded = await _userRepository.GetByIdAsync(id);
         return ApiResponse<UserDto>.SuccessResponse(MapToUserDto(loaded!), "User updated successfully");
     }
 
-    public async Task<ApiResponse> DeactivateUserAsync(int id, string deactivatedBy)
+    public async Task<ApiResponse> DeactivateUserAsync(int id, string deactivatedBy, int userId)
     {
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
@@ -150,7 +183,54 @@ public class UserService : IUserService
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
 
+        // Log audit activity
+        if (user.ClinicId.HasValue)
+        {
+            await _auditLogService.LogActivityAsync(
+                user.ClinicId.Value,
+                userId,
+                deactivatedBy,
+                "DEACTIVATE",
+                "User",
+                user.Id,
+                user.FullName,
+                $"Deactivated user: {user.FullName}"
+            );
+        }
+
         return ApiResponse.SuccessResponse("User deactivated successfully");
+    }
+
+    public async Task<ApiResponse> ActivateUserAsync(int id, string activatedBy, int userId)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null)
+            return ApiResponse.ErrorResponse("User not found");
+
+        if (user.IsActive)
+            return ApiResponse.ErrorResponse("User is already active");
+
+        user.IsActive = true;
+        user.UpdatedBy = activatedBy;
+        _userRepository.Update(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Log audit activity
+        if (user.ClinicId.HasValue)
+        {
+            await _auditLogService.LogActivityAsync(
+                user.ClinicId.Value,
+                userId,
+                activatedBy,
+                "ACTIVATE",
+                "User",
+                user.Id,
+                user.FullName,
+                $"Activated user: {user.FullName}"
+            );
+        }
+
+        return ApiResponse.SuccessResponse("User activated successfully");
     }
 
     public async Task<ApiResponse<UserDto>> GetUserByIdAsync(int id)

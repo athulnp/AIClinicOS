@@ -72,6 +72,7 @@ public class BillingController : ControllerBase
     public async Task<ActionResult<BillingDto>> CreateBilling([FromBody] CreateBillingDto dto)
     {
         var createdBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         
         int? clinicId;
         var isSuperAdmin = User.IsInRole(RoleNames.SuperAdmin);
@@ -96,7 +97,7 @@ public class BillingController : ControllerBase
             clinicId = int.TryParse(clinicIdClaim, out var cid) ? cid : null;
         }
 
-        var result = await _billingService.CreateBillingAsync(dto, createdBy, clinicId);
+        var result = await _billingService.CreateBillingAsync(dto, createdBy, userId, clinicId);
         if (!result.Success)
             return BadRequest(result);
         return CreatedAtAction(nameof(GetBilling), new { id = result.Data!.Id }, result.Data);
@@ -109,7 +110,8 @@ public class BillingController : ControllerBase
         [FromBody] RecordPaymentDto dto)
     {
         var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _billingService.RecordPaymentAsync(id, dto, updatedBy);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _billingService.RecordPaymentAsync(id, dto, updatedBy, userId);
         if (!result.Success)
             return BadRequest(result);
         return Ok(result.Data);
@@ -120,7 +122,8 @@ public class BillingController : ControllerBase
     public async Task<ActionResult<BillingDto>> UpdateBilling(int id, [FromBody] UpdateBillingDto dto)
     {
         var updatedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _billingService.UpdateBillingAsync(id, dto, updatedBy);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _billingService.UpdateBillingAsync(id, dto, updatedBy, userId);
         if (!result.Success)
             return BadRequest(result);
         return Ok(result.Data);
@@ -131,7 +134,8 @@ public class BillingController : ControllerBase
     public async Task<ActionResult> DeleteBilling(int id)
     {
         var deletedBy = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _billingService.DeleteBillingAsync(id, deletedBy);
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var result = await _billingService.DeleteBillingAsync(id, deletedBy, userId);
         if (!result.Success)
             return NotFound(result);
         return Ok(result);

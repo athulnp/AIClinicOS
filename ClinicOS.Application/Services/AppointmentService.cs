@@ -20,6 +20,7 @@ public class AppointmentService : IAppointmentService
     private readonly IValidator<RescheduleAppointmentDto> _rescheduleValidator;
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAuditLogService _auditLogService;
 
     public AppointmentService(
         IAppointmentRepository appointmentRepository,
@@ -28,7 +29,8 @@ public class AppointmentService : IAppointmentService
         IValidator<CreateAppointmentDto> createValidator,
         IValidator<RescheduleAppointmentDto> rescheduleValidator,
         IMapper mapper,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAuditLogService auditLogService)
     {
         _appointmentRepository = appointmentRepository;
         _patientRepository = patientRepository;
@@ -37,9 +39,10 @@ public class AppointmentService : IAppointmentService
         _rescheduleValidator = rescheduleValidator;
         _mapper = mapper;
         _unitOfWork = unitOfWork;
+        _auditLogService = auditLogService;
     }
 
-    public async Task<ApiResponse<AppointmentDto>> CreateAppointmentAsync(CreateAppointmentDto dto, string createdBy, int? clinicId = null)
+    public async Task<ApiResponse<AppointmentDto>> CreateAppointmentAsync(CreateAppointmentDto dto, string createdBy, int userId, int? clinicId = null)
     {
         var validationResult = await _createValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
@@ -72,11 +75,26 @@ public class AppointmentService : IAppointmentService
         await _appointmentRepository.AddAsync(appointment);
         await _unitOfWork.SaveChangesAsync();
 
+        // Log audit activity
+        if (appointment.ClinicId > 0)
+        {
+            await _auditLogService.LogActivityAsync(
+                appointment.ClinicId,
+                userId,
+                createdBy,
+                "CREATE",
+                "Appointment",
+                appointment.Id,
+                $"Appointment for {patient.FullName}",
+                $"Created appointment for patient {patient.FullName} on {appointment.AppointmentDate:yyyy-MM-dd} at {appointment.StartTime}"
+            );
+        }
+
         var appointmentDto = await MapToDto(appointment);
         return ApiResponse<AppointmentDto>.SuccessResponse(appointmentDto, "Appointment created successfully");
     }
 
-    public async Task<ApiResponse<AppointmentDto>> RescheduleAppointmentAsync(int id, RescheduleAppointmentDto dto, string updatedBy)
+    public async Task<ApiResponse<AppointmentDto>> RescheduleAppointmentAsync(int id, RescheduleAppointmentDto dto, string updatedBy, int userId)
     {
         var validationResult = await _rescheduleValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
@@ -107,11 +125,26 @@ public class AppointmentService : IAppointmentService
         _appointmentRepository.Update(appointment);
         await _unitOfWork.SaveChangesAsync();
 
+        // Log audit activity
+        if (appointment.ClinicId > 0)
+        {
+            await _auditLogService.LogActivityAsync(
+                appointment.ClinicId,
+                userId,
+                updatedBy,
+                "RESCHEDULE",
+                "Appointment",
+                appointment.Id,
+                $"Appointment rescheduled",
+                $"Rescheduled appointment to {dto.NewAppointmentDate:yyyy-MM-dd} at {dto.NewStartTime}"
+            );
+        }
+
         var appointmentDto = await MapToDto(appointment);
         return ApiResponse<AppointmentDto>.SuccessResponse(appointmentDto, "Appointment rescheduled successfully");
     }
 
-    public async Task<ApiResponse<AppointmentDto>> UpdateAppointmentStatusAsync(int id, UpdateAppointmentStatusDto dto, string updatedBy)
+    public async Task<ApiResponse<AppointmentDto>> UpdateAppointmentStatusAsync(int id, UpdateAppointmentStatusDto dto, string updatedBy, int userId)
     {
         var appointment = await _appointmentRepository.GetByIdAsync(id);
         if (appointment == null)
@@ -126,11 +159,26 @@ public class AppointmentService : IAppointmentService
         _appointmentRepository.Update(appointment);
         await _unitOfWork.SaveChangesAsync();
 
+        // Log audit activity
+        if (appointment.ClinicId > 0)
+        {
+            await _auditLogService.LogActivityAsync(
+                appointment.ClinicId,
+                userId,
+                updatedBy,
+                "UPDATE_STATUS",
+                "Appointment",
+                appointment.Id,
+                $"Appointment status changed",
+                $"Changed appointment status to {dto.Status}"
+            );
+        }
+
         var appointmentDto = await MapToDto(appointment);
         return ApiResponse<AppointmentDto>.SuccessResponse(appointmentDto, "Appointment status updated successfully");
     }
 
-    public async Task<ApiResponse> CancelAppointmentAsync(int id, string updatedBy)
+    public async Task<ApiResponse> CancelAppointmentAsync(int id, string updatedBy, int userId)
     {
         var appointment = await _appointmentRepository.GetByIdAsync(id);
         if (appointment == null)
@@ -143,6 +191,21 @@ public class AppointmentService : IAppointmentService
 
         _appointmentRepository.Update(appointment);
         await _unitOfWork.SaveChangesAsync();
+
+        // Log audit activity
+        if (appointment.ClinicId > 0)
+        {
+            await _auditLogService.LogActivityAsync(
+                appointment.ClinicId,
+                userId,
+                updatedBy,
+                "CANCEL",
+                "Appointment",
+                appointment.Id,
+                $"Appointment cancelled",
+                $"Cancelled appointment scheduled for {appointment.AppointmentDate:yyyy-MM-dd}"
+            );
+        }
 
         return ApiResponse.SuccessResponse("Appointment cancelled successfully");
     }
@@ -212,7 +275,7 @@ public class AppointmentService : IAppointmentService
         return PagedResponse<AppointmentDto>.Create(appointmentDtos, pagination.PageNumber, pagination.PageSize, totalCount);
     }
 
-    public async Task<ApiResponse<AppointmentDto>> UpdateAppointmentAsync(int id, UpdateAppointmentDto dto, string updatedBy)
+    public async Task<ApiResponse<AppointmentDto>> UpdateAppointmentAsync(int id, UpdateAppointmentDto dto, string updatedBy, int userId)
     {
         var appointment = await _appointmentRepository.GetByIdAsync(id);
         if (appointment == null)

@@ -18,19 +18,22 @@ public class AuthService : IAuthService
     private readonly IValidator<LoginDto> _loginValidator;
     private readonly IConfiguration _configuration;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAuditLogService _auditLogService;
 
     public AuthService(
         IUserRepository userRepository,
         IClinicRepository clinicRepository,
         IValidator<LoginDto> loginValidator,
         IConfiguration configuration,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAuditLogService auditLogService)
     {
         _userRepository = userRepository;
         _clinicRepository = clinicRepository;
         _loginValidator = loginValidator;
         _configuration = configuration;
         _unitOfWork = unitOfWork;
+        _auditLogService = auditLogService;
     }
 
     public async Task<ApiResponse<LoginResponseDto>> LoginAsync(LoginDto dto)
@@ -92,6 +95,22 @@ public class AuthService : IAuthService
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
 
+        // Log audit activity
+        var clinicId = clinic?.Id ?? user.ClinicId ?? 0;
+        if (clinicId > 0)
+        {
+            await _auditLogService.LogActivityAsync(
+                clinicId,
+                user.Id,
+                user.Username,
+                "LOGIN",
+                "User",
+                user.Id,
+                user.FullName,
+                $"User {user.FullName} logged in"
+            );
+        }
+
         return ApiResponse<LoginResponseDto>.SuccessResponse(new LoginResponseDto
         {
             Token = token,
@@ -119,6 +138,22 @@ public class AuthService : IAuthService
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
 
+        // Log audit activity
+        var clinicId = clinic?.Id ?? user.ClinicId ?? 0;
+        if (clinicId > 0)
+        {
+            await _auditLogService.LogActivityAsync(
+                clinicId,
+                user.Id,
+                user.Username,
+                "TOKEN_REFRESH",
+                "User",
+                user.Id,
+                user.FullName,
+                $"User {user.FullName} refreshed token"
+            );
+        }
+
         return ApiResponse<LoginResponseDto>.SuccessResponse(new LoginResponseDto
         {
             Token = token,
@@ -138,6 +173,22 @@ public class AuthService : IAuthService
         user.RefreshTokenExpiryTime = null;
         _userRepository.Update(user);
         await _unitOfWork.SaveChangesAsync();
+
+        // Log audit activity
+        var clinicId = user.ClinicId ?? 0;
+        if (clinicId > 0)
+        {
+            await _auditLogService.LogActivityAsync(
+                clinicId,
+                user.Id,
+                user.Username,
+                "LOGOUT",
+                "User",
+                user.Id,
+                user.FullName,
+                $"User {user.FullName} logged out"
+            );
+        }
 
         return ApiResponse.SuccessResponse("Logout successful");
     }

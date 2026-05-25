@@ -21,6 +21,7 @@ public class BillingService : IBillingService
     private readonly IValidator<RecordPaymentDto> _paymentValidator;
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAuditLogService _auditLogService;
 
     public BillingService(
         IBillingRepository billingRepository,
@@ -30,7 +31,8 @@ public class BillingService : IBillingService
         IValidator<UpdateBillingDto> updateValidator,
         IValidator<RecordPaymentDto> paymentValidator,
         IMapper mapper,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAuditLogService auditLogService)
     {
         _billingRepository = billingRepository;
         _patientRepository = patientRepository;
@@ -40,9 +42,10 @@ public class BillingService : IBillingService
         _paymentValidator = paymentValidator;
         _mapper = mapper;
         _unitOfWork = unitOfWork;
+        _auditLogService = auditLogService;
     }
 
-    public async Task<ApiResponse<BillingDto>> CreateBillingAsync(CreateBillingDto dto, string createdBy, int? clinicId = null)
+    public async Task<ApiResponse<BillingDto>> CreateBillingAsync(CreateBillingDto dto, string createdBy, int userId, int? clinicId = null)
     {
         var validationResult = await _createValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
@@ -72,11 +75,26 @@ public class BillingService : IBillingService
         await _billingRepository.AddAsync(billing);
         await _unitOfWork.SaveChangesAsync();
 
+        // Log audit activity
+        if (billing.ClinicId > 0)
+        {
+            await _auditLogService.LogActivityAsync(
+                billing.ClinicId,
+                userId,
+                createdBy,
+                "CREATE",
+                "Billing",
+                billing.Id,
+                $"Invoice {billing.InvoiceNumber}",
+                $"Created billing record for patient {patient.FullName} with amount {dto.TotalAmount}"
+            );
+        }
+
         var billingDto = await MapToDto(billing);
         return ApiResponse<BillingDto>.SuccessResponse(billingDto, "Billing record created successfully");
     }
 
-    public async Task<ApiResponse<BillingDto>> UpdateBillingAsync(int id, UpdateBillingDto dto, string updatedBy)
+    public async Task<ApiResponse<BillingDto>> UpdateBillingAsync(int id, UpdateBillingDto dto, string updatedBy, int userId)
     {
         var validationResult = await _updateValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
@@ -100,11 +118,26 @@ public class BillingService : IBillingService
         _billingRepository.Update(billing);
         await _unitOfWork.SaveChangesAsync();
 
+        // Log audit activity
+        if (billing.ClinicId > 0)
+        {
+            await _auditLogService.LogActivityAsync(
+                billing.ClinicId,
+                userId,
+                updatedBy,
+                "UPDATE",
+                "Billing",
+                billing.Id,
+                $"Invoice {billing.InvoiceNumber}",
+                $"Updated billing record with amount {dto.TotalAmount}"
+            );
+        }
+
         var billingDto = await MapToDto(billing);
         return ApiResponse<BillingDto>.SuccessResponse(billingDto, "Billing record updated successfully");
     }
 
-    public async Task<ApiResponse> DeleteBillingAsync(int id, string deletedBy)
+    public async Task<ApiResponse> DeleteBillingAsync(int id, string deletedBy, int userId)
     {
         var billing = await _billingRepository.GetByIdAsync(id);
         if (billing == null)
@@ -118,7 +151,7 @@ public class BillingService : IBillingService
         return ApiResponse.SuccessResponse("Billing record deleted successfully");
     }
 
-    public async Task<ApiResponse<BillingDto>> RecordPaymentAsync(int id, RecordPaymentDto dto, string updatedBy)
+    public async Task<ApiResponse<BillingDto>> RecordPaymentAsync(int id, RecordPaymentDto dto, string updatedBy, int userId)
     {
         var validationResult = await _paymentValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
@@ -150,6 +183,21 @@ public class BillingService : IBillingService
 
         _billingRepository.Update(billing);
         await _unitOfWork.SaveChangesAsync();
+
+        // Log audit activity
+        if (billing.ClinicId > 0)
+        {
+            await _auditLogService.LogActivityAsync(
+                billing.ClinicId,
+                userId,
+                updatedBy,
+                "PAYMENT_RECORDED",
+                "Billing",
+                billing.Id,
+                $"Invoice {billing.InvoiceNumber}",
+                $"Recorded payment of {dto.PaymentAmount} via {dto.PaymentMethod}. Balance: {billing.BalanceAmount}"
+            );
+        }
 
         var billingDto = await MapToDto(billing);
         return ApiResponse<BillingDto>.SuccessResponse(billingDto, "Payment recorded successfully");

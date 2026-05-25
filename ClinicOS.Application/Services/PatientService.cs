@@ -18,6 +18,7 @@ public class PatientService : IPatientService
     private readonly IValidator<UpdatePatientDto> _updateValidator;
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAuditLogService _auditLogService;
 
     public PatientService(
         IPatientRepository patientRepository,
@@ -25,7 +26,8 @@ public class PatientService : IPatientService
         IValidator<CreatePatientDto> createValidator,
         IValidator<UpdatePatientDto> updateValidator,
         IMapper mapper,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAuditLogService auditLogService)
     {
         _patientRepository = patientRepository;
         _clinicRepository = clinicRepository;
@@ -33,9 +35,10 @@ public class PatientService : IPatientService
         _updateValidator = updateValidator;
         _mapper = mapper;
         _unitOfWork = unitOfWork;
+        _auditLogService = auditLogService;
     }
 
-    public async Task<ApiResponse<PatientDto>> CreatePatientAsync(CreatePatientDto dto, string createdBy, int clinicId)
+    public async Task<ApiResponse<PatientDto>> CreatePatientAsync(CreatePatientDto dto, string createdBy, int userId, int clinicId)
     {
         var validationResult = await _createValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
@@ -62,11 +65,23 @@ public class PatientService : IPatientService
         await _patientRepository.AddAsync(patient);
         await _unitOfWork.SaveChangesAsync();
 
+        // Log audit activity
+        await _auditLogService.LogActivityAsync(
+            clinicId,
+            userId,
+            createdBy,
+            "CREATE",
+            "Patient",
+            patient.Id,
+            patient.FullName,
+            $"Created new patient: {patient.FullName}"
+        );
+
         var patientDto = _mapper.Map<PatientDto>(patient);
         return ApiResponse<PatientDto>.SuccessResponse(patientDto, "Patient created successfully");
     }
 
-    public async Task<ApiResponse<PatientDto>> UpdatePatientAsync(int id, UpdatePatientDto dto, string updatedBy)
+    public async Task<ApiResponse<PatientDto>> UpdatePatientAsync(int id, UpdatePatientDto dto, string updatedBy, int userId)
     {
         var validationResult = await _updateValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
@@ -86,11 +101,23 @@ public class PatientService : IPatientService
         _patientRepository.Update(patient);
         await _unitOfWork.SaveChangesAsync();
 
+        // Log audit activity
+        await _auditLogService.LogActivityAsync(
+            patient.ClinicId,
+            userId,
+            updatedBy,
+            "UPDATE",
+            "Patient",
+            patient.Id,
+            patient.FullName,
+            $"Updated patient: {patient.FullName}"
+        );
+
         var patientDto = _mapper.Map<PatientDto>(patient);
         return ApiResponse<PatientDto>.SuccessResponse(patientDto, "Patient updated successfully");
     }
 
-    public async Task<ApiResponse> DeletePatientAsync(int id, string deletedBy)
+    public async Task<ApiResponse> DeletePatientAsync(int id, string deletedBy, int userId)
     {
         var patient = await _patientRepository.GetByIdAsync(id);
         if (patient == null)
@@ -100,6 +127,18 @@ public class PatientService : IPatientService
 
         await _patientRepository.SoftDeleteAsync(id, deletedBy);
         await _unitOfWork.SaveChangesAsync();
+
+        // Log audit activity
+        await _auditLogService.LogActivityAsync(
+            patient.ClinicId,
+            userId,
+            deletedBy,
+            "DELETE",
+            "Patient",
+            patient.Id,
+            patient.FullName,
+            $"Deleted patient: {patient.FullName}"
+        );
 
         return ApiResponse.SuccessResponse("Patient deleted successfully");
     }

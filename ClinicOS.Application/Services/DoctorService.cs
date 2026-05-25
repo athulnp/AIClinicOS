@@ -19,6 +19,7 @@ public class DoctorService : IDoctorService
     private readonly IValidator<UpdateDoctorDto> _updateValidator;
     private readonly IMapper _mapper;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAuditLogService _auditLogService;
 
     public DoctorService(
         IDoctorRepository doctorRepository,
@@ -26,7 +27,8 @@ public class DoctorService : IDoctorService
         IValidator<CreateDoctorDto> createValidator,
         IValidator<UpdateDoctorDto> updateValidator,
         IMapper mapper,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAuditLogService auditLogService)
     {
         _doctorRepository = doctorRepository;
         _userRepository = userRepository;
@@ -34,6 +36,7 @@ public class DoctorService : IDoctorService
         _updateValidator = updateValidator;
         _mapper = mapper;
         _unitOfWork = unitOfWork;
+        _auditLogService = auditLogService;
     }
 
     public async Task<DoctorResponseDto?> GetDoctorByIdAsync(int id)
@@ -142,6 +145,22 @@ public class DoctorService : IDoctorService
         await _doctorRepository.CreateAsync(doctor);
         await _unitOfWork.SaveChangesAsync();
 
+        // Log audit activity
+        if (clinicId.HasValue || user.ClinicId.HasValue)
+        {
+            var logClinicId = clinicId ?? user.ClinicId!.Value;
+            await _auditLogService.LogActivityAsync(
+                logClinicId,
+                user.Id,
+                user.Username,
+                "CREATE",
+                "Doctor",
+                doctor.Id,
+                user.FullName,
+                $"Created doctor profile for {user.FullName} - {dto.Specialization}"
+            );
+        }
+
         return _mapper.Map<DoctorResponseDto>(doctor);
     }
 
@@ -186,6 +205,21 @@ public class DoctorService : IDoctorService
         await _doctorRepository.CreateAsync(doctor);
         await _unitOfWork.SaveChangesAsync();
 
+        // Log audit activity
+        if (doctor.ClinicId > 0)
+        {
+            await _auditLogService.LogActivityAsync(
+                doctor.ClinicId,
+                user.Id,
+                user.Username,
+                "CREATE",
+                "Doctor",
+                doctor.Id,
+                user.FullName,
+                $"Created doctor profile for {user.FullName} - {dto.Specialization}"
+            );
+        }
+
         return _mapper.Map<DoctorResponseDto>(doctor);
     }
 
@@ -217,6 +251,22 @@ public class DoctorService : IDoctorService
         await _doctorRepository.UpdateAsync(doctor);
         await _unitOfWork.SaveChangesAsync();
 
+        // Log audit activity
+        if (doctor.ClinicId > 0)
+        {
+            var user = await _userRepository.GetByIdAsync(doctor.UserId);
+            await _auditLogService.LogActivityAsync(
+                doctor.ClinicId,
+                doctor.UserId,
+                user?.Username ?? "System",
+                "UPDATE",
+                "Doctor",
+                doctor.Id,
+                user?.FullName ?? "Unknown",
+                $"Updated doctor profile - {dto.Specialization}"
+            );
+        }
+
         return _mapper.Map<DoctorResponseDto>(doctor);
     }
 
@@ -245,6 +295,21 @@ public class DoctorService : IDoctorService
         if (result)
         {
             await _unitOfWork.SaveChangesAsync();
+
+            // Log audit activity
+            if (doctor.ClinicId > 0)
+            {
+                await _auditLogService.LogActivityAsync(
+                    doctor.ClinicId,
+                    doctor.UserId,
+                    user?.Username ?? "System",
+                    "DELETE",
+                    "Doctor",
+                    doctor.Id,
+                    user?.FullName ?? "Unknown",
+                    $"Deleted doctor profile"
+                );
+            }
         }
 
         return result;
