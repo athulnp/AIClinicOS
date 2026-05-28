@@ -2,7 +2,9 @@ using ClinicOS.API.Authorization;
 using ClinicOS.API.Logging;
 using ClinicOS.API.Middleware;
 using ClinicOS.API.Services;
+using ClinicOS.Application.Commands;
 using ClinicOS.Application.DTOs;
+using ClinicOS.Application.Handlers;
 using ClinicOS.Application.Interfaces;
 using ClinicOS.Application.Mapping;
 using ClinicOS.Application.Services;
@@ -10,6 +12,7 @@ using ClinicOS.Infrastructure.Data;
 using ClinicOS.Infrastructure.Repositories;
 using ClinicOS.Infrastructure.Services;
 using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -32,6 +35,7 @@ builder.Host.UseSerilog();
 
 // Add services to the container
 builder.Services.AddControllers();
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GenerateTreatmentNoteCommand).Assembly));
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantContext, TenantContext>();
 
@@ -55,6 +59,8 @@ builder.Services.AddScoped<IReminderRepository, ReminderRepository>();
 builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
 builder.Services.AddScoped<IAppointmentNoteRepository, AppointmentNoteRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<ITreatmentNoteRepository, TreatmentNoteRepository>();
+builder.Services.AddScoped<IAiUsageLogRepository, AiUsageLogRepository>();
 
 // Register Unit of Work
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -70,6 +76,10 @@ builder.Services.AddScoped<IClinicService, ClinicService>();
 builder.Services.AddScoped<IReminderService, ReminderService>();
 builder.Services.AddScoped<IDoctorService, DoctorService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+
+// Register AI service
+builder.Services.Configure<GeminiOptions>(builder.Configuration.GetSection(GeminiOptions.SectionName));
+builder.Services.AddHttpClient<IAIClinicalNotesService, GeminiClinicalNotesService>();
 
 // Register validators
 builder.Services.AddValidatorsFromAssemblyContaining<CreatePatientDto>();

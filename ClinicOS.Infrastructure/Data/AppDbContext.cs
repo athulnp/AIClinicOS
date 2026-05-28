@@ -30,6 +30,8 @@ public class AppDbContext : DbContext
     public DbSet<Doctor> Doctors { get; set; }
     public DbSet<Reminder> Reminders { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<TreatmentNote> TreatmentNotes { get; set; }
+    public DbSet<AiUsageLog> AiUsageLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -226,6 +228,67 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(a => a.ClinicId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // TreatmentNote configuration - Temporarily disabled ClinicId filter for debugging
+        // modelBuilder.Entity<TreatmentNote>()
+        //     .HasQueryFilter(t =>
+        //         !_tenantContext.HasClinic || t.ClinicId == _tenantContext.ClinicId);
+
+        modelBuilder.Entity<TreatmentNote>()
+            .HasIndex(t => new { t.ClinicId, t.PatientId });
+
+        modelBuilder.Entity<TreatmentNote>()
+            .HasIndex(t => new { t.ClinicId, t.AppointmentId });
+
+        modelBuilder.Entity<TreatmentNote>()
+            .HasOne(t => t.Clinic)
+            .WithMany()
+            .HasForeignKey(t => t.ClinicId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TreatmentNote>()
+            .HasOne(t => t.Patient)
+            .WithMany()
+            .HasForeignKey(t => t.PatientId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TreatmentNote>()
+            .HasOne(t => t.Appointment)
+            .WithMany()
+            .HasForeignKey(t => t.AppointmentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TreatmentNote>()
+            .HasOne(t => t.GeneratedBy)
+            .WithMany()
+            .HasForeignKey(t => t.GeneratedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // AiUsageLog configuration with indexes for performance
+        modelBuilder.Entity<AiUsageLog>()
+            .HasQueryFilter(a =>
+                !_tenantContext.HasClinic || a.ClinicId == _tenantContext.ClinicId);
+
+        modelBuilder.Entity<AiUsageLog>()
+            .HasIndex(a => new { a.ClinicId, a.CreatedAt });
+
+        modelBuilder.Entity<AiUsageLog>()
+            .HasIndex(a => new { a.ClinicId, a.UserId });
+
+        modelBuilder.Entity<AiUsageLog>()
+            .HasIndex(a => a.FeatureName);
+
+        modelBuilder.Entity<AiUsageLog>()
+            .HasOne(a => a.Clinic)
+            .WithMany()
+            .HasForeignKey(a => a.ClinicId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<AiUsageLog>()
+            .HasOne(a => a.User)
+            .WithMany()
+            .HasForeignKey(a => a.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 
     public override int SaveChanges()
