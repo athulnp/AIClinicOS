@@ -69,12 +69,12 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Role>()
             .HasIndex(r => new { r.Name, r.ClinicId })
             .IsUnique()
-            .HasFilter("[ClinicId] IS NOT NULL");
+            .HasFilter("\"ClinicId\" IS NOT NULL");
 
         modelBuilder.Entity<Role>()
             .HasIndex(r => r.Name)
             .IsUnique()
-            .HasFilter("[ClinicId] IS NULL");
+            .HasFilter("\"ClinicId\" IS NULL");
 
         modelBuilder.Entity<RolePermission>()
             .HasKey(rp => new { rp.RoleId, rp.PermissionId });
@@ -188,7 +188,7 @@ public class AppDbContext : DbContext
             .HasForeignKey(r => r.AppointmentId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // SQL Server: no cascade from Clinic — avoids multiple cascade paths (e.g. Clinic→Appointment→Reminder vs Clinic→Reminder)
+        // No cascade from Clinic — avoids multiple cascade paths (e.g. Clinic→Appointment→Reminder vs Clinic→Reminder)
         modelBuilder.Entity<Appointment>()
             .HasOne(a => a.Clinic)
             .WithMany()
